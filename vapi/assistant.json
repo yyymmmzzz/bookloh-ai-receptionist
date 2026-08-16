@@ -1,0 +1,125 @@
+{
+  "name": "Bookloh AI Receptionist — Handy Works",
+  "model": {
+    "provider": "openai",
+    "model": "gpt-4o",
+    "temperature": 0.3,
+    "maxTokens": 500,
+    "systemPrompt": "<<PASTE THE SYSTEM PROMPT FROM vapi/system-prompt.md HERE>>"
+  },
+  "voice": {
+    "provider": "openai",
+    "voiceId": "alloy"
+  },
+  "firstMessage": "Hey, this is Alex over at Handy Works Home Services. This call may be recorded for quality. What can I help you with today?",
+  "endCallFunctionEnabled": true,
+  "endCallPhrases": ["goodbye", "have a good day", "thanks bye"],
+  "silenceTimeoutSeconds": 30,
+  "responseDelaySeconds": 0.3,
+  "llmRequestDelaySeconds": 0.1,
+  "interruptionThreshold": 200,
+  "maxDurationSeconds": 600,
+  "serverUrl": "https://YOUR_DOMAIN/api/vapi/tools",
+  "serverUrlSecret": "<<SAME VALUE AS WEBHOOK_SECRET IN YOUR .env>>",
+  "tools": [
+    {
+      "type": "function",
+      "function": {
+        "name": "validate_service",
+        "description": "Check if the customer's zip code is in our service area AND if their issue type is in our trade list. Always call this BEFORE discussing details or making any commitment.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "zipcode": {
+              "type": "string",
+              "description": "Customer's 5-digit US zip code"
+            },
+            "issue_type": {
+              "type": "string",
+              "enum": ["plumbing", "electrical", "hvac", "handyman", "roofing", "general"],
+              "description": "Type of repair needed"
+            }
+          },
+          "required": ["zipcode", "issue_type"]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "get_price_quote",
+        "description": "Get a reference price range for a known issue type, plus the trip fee and any fuel surcharge. The trip fee is always $89. A fuel surcharge of $2 per mile is added for customers beyond 15 miles from our base. Returns the full pricing breakdown so the AI can quote a total estimate.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "issue_type": {
+              "type": "string",
+              "enum": ["plumbing", "electrical", "hvac", "handyman", "roofing", "general"]
+            },
+            "distance_miles": {
+              "type": "number",
+              "description": "Optional. Driving distance to customer in miles. If omitted, the server will use the distance from the most recent validate_service call in this same conversation."
+            }
+          },
+          "required": ["issue_type"]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "flag_urgent",
+        "description": "Mark this call as URGENT. Use when the customer describes an emergency (water leak, electrical sparking, gas smell, no power in whole house, sewage backup, burst pipe). The boss will be called back within 5-15 minutes.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "reason": {
+              "type": "string",
+              "description": "Why this is urgent (e.g. 'water everywhere', 'gas smell')"
+            }
+          },
+          "required": ["reason"]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "flag_uncertain",
+        "description": "Mark this call as needing a callback. Use when the customer wants to talk to a person, you don't understand them, the issue is outside our price list, or anything else requires the boss's input.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "reason": {
+              "type": "string",
+              "description": "Why the boss needs to follow up"
+            }
+          },
+          "required": ["reason"]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "end_call",
+        "description": "End the call with a specific outcome. This tells the system the call is done and what the decision was.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "outcome": {
+              "type": "string",
+              "enum": ["accepted", "urgent", "unsure", "rejected"],
+              "description": "accepted=we'll send someone, urgent=immediate callback, unsure=boss follow-up, rejected=out of scope"
+            },
+            "summary": {
+              "type": "string",
+              "description": "One-sentence summary of the call for the boss's records"
+            }
+          },
+          "required": ["outcome", "summary"]
+        }
+      }
+    }
+  ]
+}
