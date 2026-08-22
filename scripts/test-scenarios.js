@@ -370,10 +370,71 @@ async function run() {
       expected: { ai_decision: "accepted", status: "pending", issue_type: "plumbing" },
       expectedSummary: "Far-distance accepted with fuel surcharge",
     },
+    {
+      // Phase 1 reject: AI calls check_trade (NOT validate_service) immediately
+      // after hearing "roof is leaking", gets in_trade=false, politely declines,
+      // and ends call within 15 seconds. NO address collected.
+      name: "12. REJECT (out of trade - roofing, Phase 1 check_trade)",
+      customerName: "Liam Walker",
+      customerPhone: "+15551110012",
+      duration: 15,
+      messages: [
+        { role: "assistant", message: "Hey, this is Alex over at Handy Works Home Services. This call may be recorded for quality. What can I help you with today?", time: 1000 },
+        { role: "user", message: "Hi, my roof is leaking pretty bad after the storm last night, water is coming into the bedroom.", time: 5500 },
+        { role: "assistant", message: "I'm really sorry to hear that, but roofing is outside what we do here at Handy Works. We focus on plumbing, electrical, HVAC, and handyman jobs. I'd recommend searching for a roofer in your area on Google, you should find someone quickly.", time: 9000 },
+        { role: "user", message: "Oh okay, thanks anyway.", time: 13000 },
+        { role: "assistant", message: "Sorry we can't help this time, have a good one.", time: 14500 },
+      ],
+      toolCalls: [
+        // KEY: AI calls check_trade FIRST (no zipcode), gets in_trade=false,
+        // and rejects immediately. No validate_service call. No address asked.
+        { id: "t1", type: "function", function: { name: "check_trade", arguments: { issue_type: "roofing" }, result: JSON.stringify({ in_trade: false, reason: "We don't handle roofing jobs. We specialize in: plumbing, electrical, hvac, handyman, general." }) } },
+        { id: "t2", type: "function", function: { name: "end_call", arguments: { outcome: "rejected", summary: "Roof leak after storm - not in our trade list, declined quickly" } } },
+      ],
+      expected: { ai_decision: "rejected", status: "rejected", issue_type: "roofing" },
+      expectedSummary: "Phase 1 reject: out-of-trade detected within 15s, no address collected",
+    },
+    {
+      // Regression test: customer with a natural 1.2s pause mid-sentence.
+      // With the OLD config (llmRequestDelaySeconds=0.1), this could trigger
+      // a "double generation" — AI asks for "full address" then "ZIP code"
+      // back-to-back with no customer input in between. With the NEW config
+      // (llmRequestDelaySeconds=0.5), the AI waits for the full sentence.
+      // We assert the message array has NO two consecutive assistant messages.
+      name: "13. ANTI-REGRESSION (natural pause — no double generation)",
+      customerName: "Mia Park",
+      customerPhone: "+15551110013",
+      duration: 75,
+      messages: [
+        { role: "assistant", message: "Hey, this is Alex over at Handy Works Home Services. This call may be recorded for quality. What can I help you with today?", time: 1000 },
+        { role: "user", message: "Hi, um, I have this leak in my", time: 6500 },
+        // 1.2s natural pause here — old config would have triggered regenerate
+        { role: "user", message: "kitchen, it's been going for a few hours now.", time: 8500 },
+        { role: "assistant", message: "Where are you located? What's your zip code?", time: 12000 },
+        { role: "user", message: "77003.", time: 17000 },
+        { role: "assistant", message: "When did it start and how bad is it?", time: 21000 },
+        { role: "user", message: "Started this morning, water is on the floor but I shut off the valve under the sink.", time: 25000 },
+        { role: "assistant", message: "Smart move. And what's the best number to reach you?", time: 32000 },
+        { role: "user", message: "555-111-0013.", time: 37000 },
+        { role: "assistant", message: "When works for a visit?", time: 42000 },
+        { role: "user", message: "Anytime today if you can.", time: 46500 },
+        { role: "assistant", message: "Alright, there's an 89 dollar trip fee that goes toward the repair, and the kitchen sink repair is usually 150 to 400 dollars. So your total estimate is roughly 240 to 490. Someone will call you to confirm the time. Sound good?", time: 51000 },
+        { role: "user", message: "Sounds good, thanks.", time: 68000 },
+        { role: "assistant", message: "Perfect Mia, you'll hear from us shortly. Thanks for calling!", time: 72000 },
+      ],
+      toolCalls: [
+        { id: "t1", type: "function", function: { name: "check_trade", arguments: { issue_type: "plumbing" }, result: JSON.stringify({ in_trade: true, matched_trade: "plumbing" }) } },
+        { id: "t2", type: "function", function: { name: "validate_service", arguments: { zipcode: "77003", issue_type: "plumbing" }, result: JSON.stringify({ ok: true, distance_miles: 4 }) } },
+        { id: "t3", type: "function", function: { name: "get_price_quote", arguments: { issue_type: "plumbing", distance_miles: 4 }, result: JSON.stringify({ available: true, trip_fee: 89, fuel_surcharge: 0, total_trip_fee: 89, distance_miles: 4, range: { low: 150, high: 400 }, total_low: 239, total_high: 489 }) } },
+        { id: "t4", type: "function", function: { name: "end_call", arguments: { outcome: "accepted", summary: "Kitchen sink leak, 77003, today if possible, total $239-$489" } } },
+      ],
+      expected: { ai_decision: "accepted", status: "pending", issue_type: "plumbing" },
+      expectedSummary: "Accept with natural pause, no double generation in messages",
+    },
   ];
 
   console.log("═══════════════════════════════════════════════════════════════");
-  console.log("  Bookloh AI Receptionist — 10 scenarios");
+  console.log("  Bookloh AI Receptionist — 13 scenarios");
   console.log("═══════════════════════════════════════════════════════════════\n");
 
   // Clear DB first
@@ -422,6 +483,51 @@ async function run() {
   }
 
   console.log(`\n  ${pass}/${scenarios.length} passed, ${fail} failed\n`);
+
+  // ============================================================
+  // GLOBAL REPETITION CHECK — anti-regression for the "AI double
+  // generation" bug we hit on real calls. Scans every scenario's
+  // message array and fails if any two consecutive assistant
+  // messages exist without a user message in between.
+  //
+  // A "double generation" looks like:
+  //   assistant: "I can help with that. Could you tell me your address"
+  //   assistant: "Sure thing. I can help with that. Could you tell me your ZIP code?"
+  // (with no user message between them)
+  // ============================================================
+  console.log("═══════════════════════════════════════════════════════════════");
+  console.log("  Repetition scan (anti-regression for double-generation bug)");
+  console.log("═══════════════════════════════════════════════════════════════");
+
+  let repFail = 0;
+  for (const s of scenarios) {
+    const msgs = s.messages || [];
+    let consecutiveAssistant = 0;
+    let violation = null;
+    for (const m of msgs) {
+      if (m.role === "assistant") {
+        consecutiveAssistant++;
+        if (consecutiveAssistant > 1) {
+          violation = `turn #${consecutiveAssistant}: "${m.message.slice(0, 60)}..."`;
+          break;
+        }
+      } else {
+        consecutiveAssistant = 0;
+      }
+    }
+    if (violation) {
+      console.log(`  ✗ ${pad(s.name, 50)} ${violation}`);
+      repFail++;
+    } else {
+      console.log(`  ✓ ${pad(s.name, 50)} no consecutive assistant turns`);
+    }
+  }
+  if (repFail === 0) {
+    console.log(`\n  All ${scenarios.length} scenarios clean — no double-generation detected.`);
+  } else {
+    console.log(`\n  ⚠️  ${repFail} scenario(s) have the bug pattern — fix the simulator or the AI config.`);
+  }
+  console.log("");
 
   // Print summary table
   const { default: supaReq } = { default: () => null };

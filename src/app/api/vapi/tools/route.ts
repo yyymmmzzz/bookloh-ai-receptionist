@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getDefaultBoss } from "@/lib/order";
-import { validateService, getPriceQuote } from "@/lib/validation";
+import { validateService, getPriceQuote, checkTrade } from "@/lib/validation";
 import type {
   AIDecision,
   IssueType,
   ValidateServiceResult,
   GetPriceQuoteResult,
+  CheckTradeResult,
 } from "@/lib/types";
 
 /**
@@ -120,6 +121,16 @@ async function dispatchToolCall(
   console.log(`[tools] Call: ${name}(${JSON.stringify(args)})`);
 
   switch (name) {
+    case "check_trade": {
+      // Phase 1: instant trade check, no zip needed. The AI calls this
+      // immediately after the customer says what's wrong, before asking
+      // for an address. If the issue is out of trade, the AI should
+      // politely reject and end the call.
+      const issue_type = (args.issue_type as IssueType) || "general";
+      const result: CheckTradeResult = checkTrade(boss, issue_type);
+      return result;
+    }
+
     case "validate_service": {
       const zipcode = (args.zipcode as string) || "";
       const issue_type = (args.issue_type as IssueType) || "general";

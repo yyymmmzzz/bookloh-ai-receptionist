@@ -4,6 +4,18 @@ export type IssueType = "plumbing" | "electrical" | "hvac" | "handyman" | "roofi
 
 export type AIDecision = "accepted" | "urgent" | "unsure" | "rejected";
 
+/**
+ * Result of check_trade tool: does the boss handle this issue type?
+ * Used in Phase 1 of the conversation — call BEFORE asking for address.
+ */
+export interface CheckTradeResult {
+  in_trade: boolean;
+  /** When in_trade=true, echoes back the matched trade name */
+  matched_trade?: IssueType;
+  /** When in_trade=false, explains what trades we DO handle */
+  reason?: string;
+}
+
 export type WorkOrderStatus =
   | "pending"
   | "confirmed"

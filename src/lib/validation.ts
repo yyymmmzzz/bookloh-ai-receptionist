@@ -1,8 +1,36 @@
-import type { Boss, IssueType, ValidateServiceResult, GetPriceQuoteResult } from "./types";
+import type { Boss, IssueType, ValidateServiceResult, GetPriceQuoteResult, CheckTradeResult } from "./types";
+
+/**
+ * Quick check: is the issue type in the boss's trade list?
+ * Used in Phase 1 of the conversation flow — call this IMMEDIATELY after
+ * the customer says what's wrong, BEFORE asking for address.
+ *
+ * If out of trade, the AI should politely reject and end the call.
+ * No zip code needed for this check.
+ */
+export function checkTrade(
+  boss: Boss,
+  issueType: IssueType,
+): CheckTradeResult {
+  const inTrade = boss.service_trades.includes(issueType);
+  if (inTrade) {
+    return {
+      in_trade: true,
+      matched_trade: issueType,
+    };
+  }
+  return {
+    in_trade: false,
+    reason: `We don't handle ${issueType} jobs. We specialize in: ${boss.service_trades.join(", ")}.`,
+  };
+}
 
 /**
  * Validate that a customer's zip code is within the boss's service area
  * AND that the issue type is in the boss's trade list.
+ *
+ * Used in Phase 2 of the conversation flow — only called after check_trade
+ * has confirmed the issue is in the boss's trade list.
  *
  * Strategy (in priority order):
  * 1. Google Maps Distance Matrix API — if configured and reachable, use exact driving distance
@@ -16,7 +44,8 @@ export async function validateService(
   zipcode: string,
   issueType: IssueType,
 ): Promise<ValidateServiceResult> {
-  // Trade check first (cheap)
+  // Trade check first (cheap) — in Phase 2 flow this is usually already confirmed
+  // by check_trade, but we keep the safety check here in case AI calls directly.
   if (!boss.service_trades.includes(issueType)) {
     return {
       ok: false,

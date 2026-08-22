@@ -65,9 +65,28 @@ const TOOLS = [
   {
     type: "function",
     function: {
+      name: "check_trade",
+      description:
+        "PHASE 1 CHECK — call this IMMEDIATELY after the customer says what's wrong, BEFORE asking for an address. Checks only whether the issue type is in the boss's trade list. If the result is in_trade=false, politely tell the customer you can't help and use end_call with outcome 'rejected' — do NOT ask for their address. If in_trade=true, proceed to ask for the zip code and then call validate_service.",
+      parameters: {
+        type: "object",
+        properties: {
+          issue_type: {
+            type: "string",
+            enum: ["plumbing", "electrical", "hvac", "handyman", "roofing", "general"],
+            description: "Type of repair needed (map the customer's words to the closest value)",
+          },
+        },
+        required: ["issue_type"],
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
       name: "validate_service",
       description:
-        "Check if the customer's zip code is in our service area AND if their issue type is in our trade list. Always call this BEFORE discussing details or making any commitment.",
+        "PHASE 2 CHECK — call this only AFTER check_trade has confirmed the issue is in the trade list. Validates the zip code is within the boss's service radius. If out of area, politely decline and end the call. If in area, proceed to collect details and quote.",
       parameters: {
         type: "object",
         properties: {
@@ -185,6 +204,24 @@ const body = JSON.stringify({
     "Hey, this is Alex over at Handy Works Home Services. This call may be recorded for quality. What can I help you with today?",
   // Remove auto end-call phrases — the AI must use the end_call tool instead
   endCallPhrases: [],
+  // Anti-repetition tuning. These two delay fields are accepted at the
+  // top level by the Vapi assistant API. The combination is the main
+  // defense against the "double generation" bug:
+  //   llmRequestDelaySeconds=0.5   → wait 500ms of customer silence before
+  //                                  sending the customer audio to the LLM
+  //   responseDelaySeconds=0.5     → wait 500ms after turn-taking before the
+  //                                  AI starts its reply
+  //   (without these, a natural customer breath of 0.2-0.3s mid-sentence
+  //    can be treated as "user done speaking" by Vapi, causing a
+  //    premature LLM call whose output is then overwritten by a second
+  //    call when the customer actually finishes — the user hears two
+  //    back-to-back AI turns.)
+  // NOTE: interruptionThreshold and maxDurationSeconds are NOT accepted
+  // here by the Vapi assistant API — they must be set in the Vapi
+  // dashboard under Assistants → [this assistant] → Voice → Call settings.
+  silenceTimeoutSeconds: 30,
+  responseDelaySeconds: 0.5,
+  llmRequestDelaySeconds: 0.5,
 });
 
 const req = https.request(

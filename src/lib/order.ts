@@ -257,8 +257,11 @@ function extractCallData(
     reason = (flagUncertain.function.arguments?.reason as string) || null;
   }
 
-  // Issue type
+  // Issue type — check the new check_trade tool first (Phase 1 reject scenario),
+  // then fall back to validate_service (Phase 2) and get_price_quote.
+  const checkTradeCall = toolCalls.find((t) => t.function.name === "check_trade");
   const issueType =
+    (checkTradeCall?.function.arguments?.issue_type as IssueType | undefined) ||
     (validateService?.function.arguments?.issue_type as IssueType | undefined) ||
     (getPriceQuote?.function.arguments?.issue_type as IssueType | undefined) ||
     null;
