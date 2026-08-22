@@ -505,8 +505,9 @@ async function run() {
   console.log("  Bookloh AI Receptionist — 15 scenarios");
   console.log("═══════════════════════════════════════════════════════════════\n");
 
-  // Clear DB first
-  await postJson("/api/dev/clear", {});
+  // Clear ONLY test data first (demo + production are always preserved).
+  // The ?confirm=CLEAR-TEST-ONLY flag is required by the dev/clear safety check.
+  await postJson("/api/dev/clear?confirm=CLEAR-TEST-ONLY", {});
 
   let pass = 0;
   let fail = 0;

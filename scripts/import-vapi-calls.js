@@ -30,6 +30,9 @@ const SUPABASE_URL = ENV.match(/NEXT_PUBLIC_SUPABASE_URL=(.+)/)[1].trim();
 const SUPABASE_KEY = ENV.match(/SUPABASE_SERVICE_ROLE_KEY=(.+)/)[1].trim();
 
 const DRY_RUN = process.argv.includes("--dry-run");
+const FORCE_DOWNLOAD = process.argv.includes("--force-download");
+// Skip download if recording already in Supabase Storage (idempotent)
+const SKIP_IF_PRESENT = !process.argv.includes("--force-download");
 
 function vapiGet(url) {
   return new Promise((resolve, reject) => {
@@ -46,6 +49,67 @@ function vapiGet(url) {
         });
       })
       .on("error", reject);
+  });
+}
+
+function downloadToBuffer(url) {
+  return new Promise((resolve, reject) => {
+    https
+      .get(url, (res) => {
+        if (res.statusCode !== 200) {
+          return reject(new Error(`Download failed: ${res.statusCode}`));
+        }
+        const chunks = [];
+        res.on("data", (c) => chunks.push(c));
+        res.on("end", () => resolve(Buffer.concat(chunks)));
+      })
+      .on("error", reject);
+  });
+}
+
+function uploadToSupabaseStorage(path, body) {
+  return new Promise((resolve, reject) => {
+    const req = https.request(
+      `${SUPABASE_URL}/storage/v1/object/${path}`,
+      {
+        method: "POST",
+        headers: {
+          apikey: SUPABASE_KEY,
+          Authorization: `Bearer ${SUPABASE_KEY}`,
+          "Content-Type": "audio/wav",
+          "Content-Length": Buffer.byteLength(body),
+          "x-upsert": "true", // overwrite if exists (idempotent)
+        },
+      },
+      (res) => {
+        let b = "";
+        res.on("data", (c) => (b += c));
+        res.on("end", () => {
+          if (res.statusCode >= 200 && res.statusCode < 300) {
+            // Public bucket: URL is {supabase_url}/storage/v1/object/public/{path}
+            resolve(`${SUPABASE_URL}/storage/v1/object/public/${path}`);
+          } else {
+            reject(new Error(`Upload failed: ${res.statusCode} ${b.slice(0, 200)}`));
+          }
+        });
+      },
+    );
+    req.on("error", reject);
+    req.write(body);
+    req.end();
+  });
+}
+
+function storageObjectExists(path) {
+  return new Promise((resolve) => {
+    https
+      .request(
+        `${SUPABASE_URL}/storage/v1/object/${path}`,
+        { method: "HEAD", headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` } },
+        (res) => resolve(res.statusCode === 200),
+      )
+      .on("error", () => resolve(false))
+      .end();
   });
 }
 
@@ -345,6 +409,33 @@ async function main() {
 
     const extracted = extractFromMessages(detail);
     const record = buildWorkOrder(detail, extracted, bossId);
+
+    // Permanent storage: download audio from Vapi (URL expires in 30min)
+    // and re-host in our Supabase Storage so the link never expires.
+    if (record.recording_url && !DRY_RUN) {
+      const vapiAudioUrl = record.recording_url;
+      const storagePath = `call-recordings/${callSummary.id}.wav`;
+      const publicUrl = `${SUPABASE_URL}/storage/v1/object/public/${storagePath}`;
+
+      try {
+        const exists = SKIP_IF_PRESENT ? await storageObjectExists(storagePath) : false;
+        if (exists) {
+          record.recording_url = publicUrl;
+        } else {
+          const audioBuffer = await downloadToBuffer(vapiAudioUrl);
+          if (audioBuffer.length < 100) {
+            // Likely an error page, not actual audio
+            console.warn(`  ⚠ Audio for ${callSummary.id.slice(0,12)} is only ${audioBuffer.length} bytes — skipping upload`);
+          } else {
+            await uploadToSupabaseStorage(storagePath, audioBuffer);
+            record.recording_url = publicUrl;
+          }
+        }
+      } catch (e) {
+        console.warn(`  ⚠ Could not migrate audio for ${callSummary.id.slice(0,12)}: ${e.message}`);
+        // Keep Vapi URL as fallback (will expire in 30min)
+      }
+    }
 
     const tag = `[${record.ai_decision.padEnd(8)}] ${record.customer_phone}`;
 
