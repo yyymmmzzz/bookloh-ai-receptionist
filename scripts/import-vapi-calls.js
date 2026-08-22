@@ -177,11 +177,16 @@ function buildWorkOrder(call, extracted, bossId) {
           .filter((l) => l.trim())
           .map((l, i) => ({
             role: l.startsWith("AI:") || l.startsWith("Assistant:") ? "assistant" : "user",
-            message: l.replace(/^(AI:|Assistant:|User:)\s*/, "").trim(),
-            time: i * 1000,
+            text: l.replace(/^(AI:|Assistant:|User:)\s*/, "").trim(),
+            ts: i * 1000,
           }))
       : null,
-    recording_url: call.recordingUrl || call.artifact?.recordingUrl || null,
+    recording_url:
+      call.artifact?.presignedMonoUrl ||
+      call.artifact?.presignedStereoUrl ||
+      call.recordingUrl ||
+      call.artifact?.recordingUrl ||
+      null,
     status: statusForDecision(extracted.decision),
     vapi_call_id: call.id,
     data_source: "production", // imported from real Vapi calls
@@ -266,6 +271,40 @@ function insertWorkOrder(record) {
   });
 }
 
+/**
+ * Update an existing production record's recording_url + transcript.
+ * Used when Vapi presigned URLs expire (every 30 min) — re-run the import
+ * to refresh them.
+ */
+function updateWorkOrder(callId, patch) {
+  return new Promise((resolve, reject) => {
+    const data = JSON.stringify(patch);
+    const req = https.request(
+      `${SUPABASE_URL}/rest/v1/work_orders?vapi_call_id=eq.${encodeURIComponent(callId)}`,
+      {
+        method: "PATCH",
+        headers: {
+          apikey: SUPABASE_KEY,
+          Authorization: `Bearer ${SUPABASE_KEY}`,
+          "Content-Type": "application/json",
+          "Content-Length": Buffer.byteLength(data),
+          Prefer: "return=minimal",
+        },
+      },
+      (res) => {
+        let b = "";
+        res.on("data", (c) => (b += c));
+        res.on("end", () => {
+          if (res.statusCode >= 200 && res.statusCode < 300) resolve();
+          else reject(new Error(`Update failed: ${res.statusCode} ${b.slice(0, 200)}`));
+        });
+      },
+    );
+    req.on("error", reject);
+    req.end(data);
+  });
+}
+
 async function main() {
   console.log(DRY_RUN ? "🔍 DRY RUN MODE (no writes)\n" : "📥 Importing Vapi calls...\n");
 
@@ -290,15 +329,11 @@ async function main() {
   console.log(`  ${existing.size} already in DB (will skip)`);
 
   let inserted = 0;
+  let updated = 0;
   let skipped = 0;
   let errored = 0;
 
   for (const callSummary of eligible) {
-    if (existing.has(callSummary.id)) {
-      skipped++;
-      continue;
-    }
-
     let detail;
     try {
       detail = await fetchCallDetail(callSummary.id);
@@ -312,6 +347,35 @@ async function main() {
     const record = buildWorkOrder(detail, extracted, bossId);
 
     const tag = `[${record.ai_decision.padEnd(8)}] ${record.customer_phone}`;
+
+    if (existing.has(callSummary.id)) {
+      // Refresh: update recording_url + transcript + summary on existing
+      // production records (Vapi presigned URLs expire every 30 min).
+      if (DRY_RUN) {
+        console.log(`  WOULD UPDATE ${tag} (refresh presigned URL)`);
+        updated++;
+      } else {
+        try {
+          await updateWorkOrder(callSummary.id, {
+            recording_url: record.recording_url,
+            transcript: record.transcript,
+            summary: record.summary,
+            issue_type: record.issue_type,
+            customer_zipcode: record.customer_zipcode,
+            quote_low: record.quote_low,
+            quote_high: record.quote_high,
+            pricing_breakdown: record.pricing_breakdown,
+          });
+          console.log(`  ↻ REFRESHED  ${tag} (new presigned URL, valid ~30min)`);
+          updated++;
+        } catch (e) {
+          console.error(`  ✗ UPDATE FAILED ${tag}: ${e.message}`);
+          errored++;
+        }
+      }
+      continue;
+    }
+
     if (DRY_RUN) {
       console.log(`  WOULD INSERT ${tag} | ${(record.summary || "").slice(0, 80)}`);
       inserted++;
@@ -330,7 +394,7 @@ async function main() {
   console.log(`\n=== Summary ===`);
   console.log(`  Eligible:  ${eligible.length}`);
   console.log(`  Inserted:  ${inserted}${DRY_RUN ? " (dry run)" : ""}`);
-  console.log(`  Skipped:   ${skipped} (already in DB)`);
+  console.log(`  Refreshed: ${updated}${DRY_RUN ? " (dry run)" : " (presigned URL refresh)"}`);
   console.log(`  Errored:   ${errored}`);
   console.log(`  Skipped type: ${skippedType} (webCall / no customer)`);
 }
