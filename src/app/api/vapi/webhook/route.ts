@@ -51,7 +51,14 @@ export async function POST(req: NextRequest) {
   const eventType = message.type;
   const callId = message.call?.id;
 
-  console.log(`[webhook] Event: ${eventType}, call: ${callId}`);
+  // Distinguish test scenarios from real Vapi calls. Test scenarios (from
+  // scripts/test-scenarios.js) set orgId: "test-org" so we can mark their
+  // work_orders as data_source: 'test' and keep them separate from real
+  // production data. Real Vapi calls use a real org UUID.
+  const dataSource: "production" | "test" =
+    message.call?.orgId === "test-org" ? "test" : "production";
+
+  console.log(`[webhook] Event: ${eventType}, call: ${callId} (data_source=${dataSource})`);
 
   // Log all raw events to call_events for debugging
   try {
@@ -68,9 +75,9 @@ export async function POST(req: NextRequest) {
   // Handle the events that matter
   try {
     if (eventType === "end-of-call-report") {
-      await handleEndOfCall(message);
+      await handleEndOfCall(message, dataSource);
     } else if (eventType === "status-update") {
-      await handleStatusUpdate(message);
+      await handleStatusUpdate(message, dataSource);
     } else if (eventType === "tool-calls") {
       // Tool call events are mostly for monitoring — the actual tool
       // responses are sent back inline from the /tools endpoint
@@ -86,7 +93,7 @@ export async function POST(req: NextRequest) {
   return NextResponse.json({ received: true });
 }
 
-async function handleEndOfCall(message: VapiWebhookPayload["message"]) {
+async function handleEndOfCall(message: VapiWebhookPayload["message"], dataSource: "production" | "test" | "demo") {
   const callId = message.call?.id;
   if (!callId) {
     console.warn("[webhook] end-of-call-report without call.id");
@@ -102,8 +109,8 @@ async function handleEndOfCall(message: VapiWebhookPayload["message"]) {
   // Link the call_events to a work_order
   const supabase = getServiceClient();
 
-  // Create or update the work order
-  const order = await createOrUpdateWorkOrder(boss, callId, message);
+  // Create or update the work order. Real Vapi calls are always 'production'.
+  const order = await createOrUpdateWorkOrder(boss, callId, message, undefined, dataSource);
 
   // Backfill call_events with work_order_id
   await supabase
@@ -114,7 +121,7 @@ async function handleEndOfCall(message: VapiWebhookPayload["message"]) {
   console.log(`[webhook] Work order ${order.id} (${order.ai_decision}) created/updated for call ${callId}`);
 }
 
-async function handleStatusUpdate(message: VapiWebhookPayload["message"]) {
+async function handleStatusUpdate(message: VapiWebhookPayload["message"], dataSource: "production" | "test" | "demo") {
   const status = message.status;
   const callId = message.call?.id;
   console.log(`[webhook] Call ${callId} status: ${status}`);
@@ -143,6 +150,7 @@ async function handleStatusUpdate(message: VapiWebhookPayload["message"]) {
           status: "pending",
           vapi_call_id: callId,
           summary: "📞 Call in progress...",
+          data_source: "production", // real Vapi call
         })
         .select()
         .single();

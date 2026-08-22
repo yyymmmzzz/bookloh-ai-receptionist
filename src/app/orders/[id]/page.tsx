@@ -285,10 +285,23 @@ export default function WorkOrderDetailPage() {
         </Section>
       )}
 
-      {/* Vapi call id (debug) */}
-      {order.vapi_call_id && (
-        <div className="mt-6 text-xs text-gray-400 font-mono">Vapi call: {order.vapi_call_id}</div>
-      )}
+      {/* Data source + Vapi call id (debug) */}
+      <div className="mt-6 flex items-center gap-3 text-xs text-gray-400 font-mono flex-wrap">
+        {order.data_source && (
+          <span
+            className={`px-2 py-0.5 rounded border ${
+              order.data_source === "production"
+                ? "bg-green-50 text-green-700 border-green-200"
+                : order.data_source === "demo"
+                  ? "bg-blue-50 text-blue-700 border-blue-200"
+                  : "bg-amber-50 text-amber-700 border-amber-200"
+            }`}
+          >
+            data_source: {order.data_source}
+          </span>
+        )}
+        {order.vapi_call_id && <span>vapi_call: {order.vapi_call_id}</span>}
+      </div>
     </div>
   );
 }

@@ -114,6 +114,8 @@ export interface WorkOrder {
   last_outbound_at?: string | null;
   outbound_call_id?: string | null;
   boss_decision?: "callback_initiated" | "queued" | null;
+  // Origin of this record (so demo / test / production can be filtered separately)
+  data_source?: "demo" | "production" | "test";
   created_at: string;
   updated_at: string;
 }

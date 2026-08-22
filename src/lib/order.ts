@@ -75,6 +75,7 @@ export async function createOrUpdateWorkOrder(
   callId: string,
   endOfCall: VapiWebhookPayload["message"],
   callStart?: VapiWebhookPayload["message"],
+  dataSource: "production" | "test" | "demo" = "production",
 ): Promise<WorkOrder> {
   const supabase = getServiceClient();
 
@@ -127,6 +128,7 @@ export async function createOrUpdateWorkOrder(
     pricing_breakdown: pricingBreakdown,
     summary: summary || endOfCall.summary || endOfCall.analysis?.summary || null,
     vapi_call_id: callId,
+    data_source: dataSource,
     recording_url: endOfCall.call?.recordingUrl || null,
     transcript: buildTranscript(endOfCall),
     status,
