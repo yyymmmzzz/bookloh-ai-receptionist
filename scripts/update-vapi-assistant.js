@@ -199,6 +199,24 @@ const body = JSON.stringify({
     systemPrompt: finalPrompt,
     tools: TOOLS,
   },
+  // Alex's voice clone (uploaded to ElevenLabs Instant Voice Clone)
+  // Voice ID is the unique identifier returned by ElevenLabs after upload.
+  // 11labs = Vapi's provider string for ElevenLabs (NOT "elevenlabs")
+  // eleven_turbo_v2_5 = lowest-latency model, best for real-time phone calls
+  voice: {
+    provider: "11labs",
+    voiceId: process.env.ELEVENLABS_VOICE_ID || "HZrCrY9LUzc3dRxar8U2",
+    model: "eleven_turbo_v2_5",
+    stability: 0.5,
+    similarityBoost: 0.75,
+    useSpeakerBoost: true,
+  },
+  // Vapi expects credential references at the assistant level (NOT inside
+  // voice). When Vapi processes a 11labs voice, it finds the matching
+  // credential by provider type and uses its API key to fetch the voice.
+  credentialIds: process.env.ELEVENLABS_CREDENTIAL_ID
+    ? [process.env.ELEVENLABS_CREDENTIAL_ID]
+    : [],
   // Texas-friendly opening — Alex's own voice, not a robot script
   firstMessage:
     "Hey, this is Alex over at Handy Works Home Services. This call may be recorded for quality. What can I help you with today?",

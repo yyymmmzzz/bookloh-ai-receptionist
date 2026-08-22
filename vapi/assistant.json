@@ -8,8 +8,12 @@
     "systemPrompt": "<<PASTE THE SYSTEM PROMPT FROM vapi/system-prompt.md HERE>>"
   },
   "voice": {
-    "provider": "openai",
-    "voiceId": "alloy"
+    "provider": "11labs",
+    "voiceId": "HZrCrY9LUzc3dRxar8U2",
+    "model": "eleven_turbo_v2_5",
+    "stability": 0.5,
+    "similarityBoost": 0.75,
+    "useSpeakerBoost": true
   },
   "firstMessage": "Hey, this is Alex over at Handy Works Home Services. This call may be recorded for quality. What can I help you with today?",
   "endCallFunctionEnabled": true,
