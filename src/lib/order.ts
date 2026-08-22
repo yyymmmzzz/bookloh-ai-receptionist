@@ -239,6 +239,20 @@ function extractCallData(
   const flagUncertain = toolCalls.find((t) => t.function.name === "flag_uncertain");
   const validateService = toolCalls.find((t) => t.function.name === "validate_service");
   const getPriceQuote = toolCalls.find((t) => t.function.name === "get_price_quote");
+  // Get ALL check_trade calls — when a customer gets rejected on one issue then
+  // pivots to another, the conversation has 2+ check_trade calls. We want the
+  // LAST one whose result was in_trade=true (the one that led to acceptance),
+  // falling back to the first one if none succeeded.
+  const allCheckTrades = toolCalls.filter((t) => t.function.name === "check_trade");
+  const acceptedCheckTrade = [...allCheckTrades].reverse().find((t) => {
+    try {
+      const r = typeof t.function.result === "string" ? JSON.parse(t.function.result) : t.function.result;
+      return r?.in_trade === true;
+    } catch {
+      return false;
+    }
+  });
+  const checkTrade = acceptedCheckTrade || allCheckTrades[0];
 
   // Decision
   let decision: AIDecision = "unsure";
@@ -257,11 +271,11 @@ function extractCallData(
     reason = (flagUncertain.function.arguments?.reason as string) || null;
   }
 
-  // Issue type — check the new check_trade tool first (Phase 1 reject scenario),
-  // then fall back to validate_service (Phase 2) and get_price_quote.
-  const checkTradeCall = toolCalls.find((t) => t.function.name === "check_trade");
+  // Issue type — take the accepted check_trade if any (handles multi-issue
+  // conversations where the first issue was rejected). Fall back to
+  // validate_service or get_price_quote for single-issue flows.
   const issueType =
-    (checkTradeCall?.function.arguments?.issue_type as IssueType | undefined) ||
+    (checkTrade?.function.arguments?.issue_type as IssueType | undefined) ||
     (validateService?.function.arguments?.issue_type as IssueType | undefined) ||
     (getPriceQuote?.function.arguments?.issue_type as IssueType | undefined) ||
     null;

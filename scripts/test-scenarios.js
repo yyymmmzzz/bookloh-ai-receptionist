@@ -188,18 +188,18 @@ async function run() {
       expected: { ai_decision: "unsure", status: "callback" },
     },
     {
-      name: "4. REJECT (out of area - Dallas)",
+      name: "4. REJECT (out of area - Dallas, with alternatives offered)",
       customerName: "David Martinez",
       customerPhone: "+15551110004",
-      duration: 50,
+      duration: 55,
       messages: [
-        { role: "assistant", message: "Hi, thanks for calling Handy Works Home Services. This call may be recorded for quality. How can I help you today?", time: 1000 },
+        { role: "assistant", message: "Hey, this is Alex over at Handy Works Home Services. This call may be recorded for quality. What can I help you with today?", time: 1000 },
         { role: "user", message: "Hi, I think I have a bad breaker, half the house just lost power.", time: 6500 },
-        { role: "assistant", message: "Okay, that's frustrating. What's your address or zip code?", time: 12500 },
+        { role: "assistant", message: "What's your zip code?", time: 12500 },
         { role: "user", message: "I'm in Dallas, 75201.", time: 16500 },
-        { role: "assistant", message: "Let me check that for you... unfortunately Dallas is outside our service area, we mostly cover the Houston region. I'd recommend searching for an electrician near downtown Dallas on Google, you should find a few good options.", time: 22000 },
-        { role: "user", message: "Oh okay, no worries, thanks for checking.", time: 35500 },
-        { role: "assistant", message: "Sorry we can't help this time, have a good one.", time: 39500 },
+        { role: "assistant", message: "Dallas is about 240 miles from our base, so we can't make the trip out there. We're Houston-based, mostly covering the Houston metro. But if you know anyone up in the Houston area who needs handyman work, send them our way. Anything else I can help with?", time: 22000 },
+        { role: "user", message: "Oh no, that's all I needed. Thanks anyway.", time: 32000 },
+        { role: "assistant", message: "No problem, thanks for calling. Have a great day!", time: 38000 },
       ],
       toolCalls: [
         { id: "t1", type: "function", function: { name: "validate_service", arguments: { zipcode: "75201", issue_type: "electrical" }, result: JSON.stringify({ ok: false, reason: "Dallas is about 240 miles from our base - outside our 25-mile service area.", distance_miles: 240 }) } },
@@ -211,19 +211,29 @@ async function run() {
       name: "5. REJECT (out of trade - landscaping)",
       customerName: "Eve Johnson",
       customerPhone: "+15551110005",
-      duration: 35,
+      duration: 45,
       messages: [
-        { role: "assistant", message: "Hi, thanks for calling Handy Works Home Services. This call may be recorded for quality. How can I help you today?", time: 1000 },
-        { role: "user", message: "Hi, I need someone to come mow my lawn and pull some weeds. I'm over in 77010.", time: 7000 },
-        { role: "assistant", message: "I appreciate the call but landscaping is outside what we do, we focus on plumbing, electrical, HVAC, and handyman jobs. Try searching for a lawn care service in your area, you should find someone pretty quick.", time: 15000 },
-        { role: "user", message: "Oh okay, that's a shame. Thanks anyway.", time: 25500 },
-        { role: "assistant", message: "Sorry we can't help this time, have a good one.", time: 29000 },
+        { role: "assistant", message: "Hey, this is Alex over at Handy Works Home Services. This call may be recorded for quality. What can I help you with today?", time: 1000 },
+        { role: "user", message: "Hi, I need someone to come mow my lawn and pull some weeds.", time: 7000 },
+        { role: "assistant", message: "I appreciate the call, but landscaping isn't something we do — lawn care and yard work is a different specialty. What we do handle though is a lot of handyman stuff: furniture assembly, pressure washing, fencing, drywall, painting, that kind of thing. Is there anything else we can help you with?", time: 15000 },
+        { role: "user", message: "Oh, actually yes — I do have a section of fence that's leaning in the backyard. Can you help with that?", time: 28000 },
+        { role: "assistant", message: "Fencing we can definitely help with. What's your zip code?", time: 36000 },
+        { role: "user", message: "77010.", time: 40000 },
+        { role: "assistant", message: "Alright, when's a good time to come take a look?", time: 43000 },
+        { role: "user", message: "Saturday morning if you can.", time: 47000 },
+        { role: "assistant", message: "Got it. There's an 89 dollar trip fee that goes toward the repair, and fence repair is typically 100 to 300 dollars depending on what's going on. So your total is roughly 190 to 390. Someone will call you to confirm Saturday morning. Sound good?", time: 51000 },
+        { role: "user", message: "Sounds good, thanks.", time: 70000 },
+        { role: "assistant", message: "Perfect Eve, you'll hear from us. Have a great day!", time: 74000 },
       ],
       toolCalls: [
-        { id: "t1", type: "function", function: { name: "validate_service", arguments: { zipcode: "77010", issue_type: "landscaping" }, result: JSON.stringify({ ok: false, reason: "We don't handle landscaping jobs. We specialize in: plumbing, electrical, hvac, handyman, general." }) } },
-        { id: "t2", type: "function", function: { name: "end_call", arguments: { outcome: "rejected", summary: "Landscaping request - not in trade list, 77010" } } },
+        { id: "t1", type: "function", function: { name: "check_trade", arguments: { issue_type: "landscaping" }, result: JSON.stringify({ in_trade: false, reason: "We don't handle landscaping jobs. We specialize in: plumbing, electrical, hvac, handyman, general." }) } },
+        { id: "t2", type: "function", function: { name: "check_trade", arguments: { issue_type: "handyman" }, result: JSON.stringify({ in_trade: true, matched_trade: "handyman" }) } },
+        { id: "t3", type: "function", function: { name: "validate_service", arguments: { zipcode: "77010", issue_type: "handyman" }, result: JSON.stringify({ ok: true, distance_miles: 5 }) } },
+        { id: "t4", type: "function", function: { name: "get_price_quote", arguments: { issue_type: "handyman", distance_miles: 5 }, result: JSON.stringify({ available: true, trip_fee: 89, fuel_surcharge: 0, total_trip_fee: 89, distance_miles: 5, range: { low: 100, high: 300 }, total_low: 189, total_high: 389 }) } },
+        { id: "t5", type: "function", function: { name: "end_call", arguments: { outcome: "accepted", summary: "Fence repair, 77010, Saturday AM, total $189-$389" } } },
       ],
-      expected: { ai_decision: "rejected", status: "rejected" },
+      expected: { ai_decision: "accepted", status: "pending", issue_type: "handyman" },
+      expectedSummary: "Out-of-trade (landscaping) rejected, customer pivots to fence repair (handyman) accepted",
     },
     {
       name: "6. ACCEPT (HVAC - AC grinding noise)",
@@ -373,26 +383,28 @@ async function run() {
     {
       // Phase 1 reject: AI calls check_trade (NOT validate_service) immediately
       // after hearing "roof is leaking", gets in_trade=false, politely declines,
-      // and ends call within 15 seconds. NO address collected.
-      name: "12. REJECT (out of trade - roofing, Phase 1 check_trade)",
+      // offers alternatives, asks "anything else" — and the customer says no thanks.
+      // AI then ends the call. NO address collected. Total ~30s.
+      name: "12. REJECT (out of trade - roofing, Phase 1 + offer + no thanks)",
       customerName: "Liam Walker",
       customerPhone: "+15551110012",
-      duration: 15,
+      duration: 30,
       messages: [
         { role: "assistant", message: "Hey, this is Alex over at Handy Works Home Services. This call may be recorded for quality. What can I help you with today?", time: 1000 },
         { role: "user", message: "Hi, my roof is leaking pretty bad after the storm last night, water is coming into the bedroom.", time: 5500 },
-        { role: "assistant", message: "I'm really sorry to hear that, but roofing is outside what we do here at Handy Works. We focus on plumbing, electrical, HVAC, and handyman jobs. I'd recommend searching for a roofer in your area on Google, you should find someone quickly.", time: 9000 },
-        { role: "user", message: "Oh okay, thanks anyway.", time: 13000 },
-        { role: "assistant", message: "Sorry we can't help this time, have a good one.", time: 14500 },
+        { role: "assistant", message: "I'm really sorry to hear that, but roofing isn't something we do — that kind of work needs a roof specialist. What we do handle is handyman stuff: furniture assembly, pressure washing, fencing, drywall, painting, that kind of thing. Is there anything else we can help you with today?", time: 11000 },
+        { role: "user", message: "No, the roof is the main thing. Thanks anyway.", time: 22000 },
+        { role: "assistant", message: "No problem, I hope you get the roof sorted quickly. Have a great day!", time: 28000 },
       ],
       toolCalls: [
         // KEY: AI calls check_trade FIRST (no zipcode), gets in_trade=false,
-        // and rejects immediately. No validate_service call. No address asked.
+        // and rejects. But before ending, it offers alternatives and asks
+        // "anything else" — and waits for the customer to respond.
         { id: "t1", type: "function", function: { name: "check_trade", arguments: { issue_type: "roofing" }, result: JSON.stringify({ in_trade: false, reason: "We don't handle roofing jobs. We specialize in: plumbing, electrical, hvac, handyman, general." }) } },
-        { id: "t2", type: "function", function: { name: "end_call", arguments: { outcome: "rejected", summary: "Roof leak after storm - not in our trade list, declined quickly" } } },
+        { id: "t2", type: "function", function: { name: "end_call", arguments: { outcome: "rejected", summary: "Roof leak after storm - not in trade list, customer declined alternatives" } } },
       ],
       expected: { ai_decision: "rejected", status: "rejected", issue_type: "roofing" },
-      expectedSummary: "Phase 1 reject: out-of-trade detected within 15s, no address collected",
+      expectedSummary: "Phase 1 reject + alternatives offered + customer says no thanks → end_call",
     },
     {
       // Regression test: customer with a natural 1.2s pause mid-sentence.
@@ -431,10 +443,66 @@ async function run() {
       expected: { ai_decision: "accepted", status: "pending", issue_type: "plumbing" },
       expectedSummary: "Accept with natural pause, no double generation in messages",
     },
+    {
+      // Customer asks for roofing (out of trade) → AI offers alternatives →
+      // customer says yes, they actually need a faucet replaced → AI does
+      // a fresh Phase 1 check_trade(plumbing) → continues to Phase 2/3 → accepted.
+      name: "14. REJECT then ACCEPT (roofing → faucet replacement)",
+      customerName: "Noah Brooks",
+      customerPhone: "+15551110014",
+      duration: 80,
+      messages: [
+        { role: "assistant", message: "Hey, this is Alex over at Handy Works Home Services. This call may be recorded for quality. What can I help you with today?", time: 1000 },
+        { role: "user", message: "I need someone to look at my roof, some shingles came off.", time: 6500 },
+        { role: "assistant", message: "Roofing isn't our specialty, but we do a lot of handyman work — plumbing, fencing, pressure washing, drywall, that kind of thing. Anything else I can help you with?", time: 12000 },
+        { role: "user", message: "Yeah actually, my kitchen faucet has been dripping for weeks. Can you help with that?", time: 22000 },
+        { role: "assistant", message: "Faucet repair, we can definitely handle that. What's your zip code?", time: 30000 },
+        { role: "user", message: "77006.", time: 35000 },
+        { role: "assistant", message: "Got it. When works for a visit?", time: 39000 },
+        { role: "user", message: "Tomorrow morning if possible.", time: 43000 },
+        { role: "assistant", message: "And the best number to reach you?", time: 47000 },
+        { role: "user", message: "555-111-0014.", time: 51000 },
+        { role: "assistant", message: "Alright Noah, there's an 89 dollar trip fee that goes toward the repair, and a faucet repair is usually 150 to 350 dollars. So your total is roughly 240 to 440. Someone will call you to confirm tomorrow morning. Sound good?", time: 55000 },
+        { role: "user", message: "Yes, sounds great.", time: 70000 },
+        { role: "assistant", message: "Perfect, you'll hear from us. Thanks for calling!", time: 74000 },
+      ],
+      toolCalls: [
+        // Phase 1: roofing rejected
+        { id: "t1", type: "function", function: { name: "check_trade", arguments: { issue_type: "roofing" }, result: JSON.stringify({ in_trade: false, reason: "We don't handle roofing jobs. We specialize in: plumbing, electrical, hvac, handyman, general." }) } },
+        // Fresh Phase 1 after customer pivots
+        { id: "t2", type: "function", function: { name: "check_trade", arguments: { issue_type: "plumbing" }, result: JSON.stringify({ in_trade: true, matched_trade: "plumbing" }) } },
+        { id: "t3", type: "function", function: { name: "validate_service", arguments: { zipcode: "77006", issue_type: "plumbing" }, result: JSON.stringify({ ok: true, distance_miles: 4 }) } },
+        { id: "t4", type: "function", function: { name: "get_price_quote", arguments: { issue_type: "plumbing", distance_miles: 4 }, result: JSON.stringify({ available: true, trip_fee: 89, fuel_surcharge: 0, total_trip_fee: 89, distance_miles: 4, range: { low: 150, high: 350 }, total_low: 239, total_high: 439 }) } },
+        { id: "t5", type: "function", function: { name: "end_call", arguments: { outcome: "accepted", summary: "Faucet repair, 77006, tomorrow AM, total $239-$439" } } },
+      ],
+      expected: { ai_decision: "accepted", status: "pending", issue_type: "plumbing" },
+      expectedSummary: "Roofing rejected + alternatives offered + customer pivots to faucet → accepted",
+    },
+    {
+      // Customer asks for HVAC major work (out of trade) → AI offers
+      // alternatives → customer says no, that's the only thing → AI ends call.
+      name: "15. REJECT no-thanks (HVAC central system → no alternatives needed)",
+      customerName: "Olivia Reed",
+      customerPhone: "+15551110015",
+      duration: 30,
+      messages: [
+        { role: "assistant", message: "Hey, this is Alex over at Handy Works Home Services. This call may be recorded for quality. What can I help you with today?", time: 1000 },
+        { role: "user", message: "Yeah, I need to replace my whole central AC system. The compressor is dead.", time: 6500 },
+        { role: "assistant", message: "A full central system replacement is bigger than what we do — you'd want a dedicated HVAC company for that. But we handle a lot of handyman stuff: plumbing, fencing, drywall, painting, pressure washing, that kind of thing. Anything else I can help with?", time: 12000 },
+        { role: "user", message: "No, just the AC. Thanks.", time: 22000 },
+        { role: "assistant", message: "Got it, good luck with the AC. Have a great day!", time: 28000 },
+      ],
+      toolCalls: [
+        { id: "t1", type: "function", function: { name: "check_trade", arguments: { issue_type: "hvac" }, result: JSON.stringify({ in_trade: false, reason: "We don't handle central HVAC system replacements. We specialize in: plumbing, electrical, hvac (minor), handyman, general." }) } },
+        { id: "t2", type: "function", function: { name: "end_call", arguments: { outcome: "rejected", summary: "Central AC replacement - too big for our handyman scope, customer declined alternatives" } } },
+      ],
+      expected: { ai_decision: "rejected", status: "rejected", issue_type: "hvac" },
+      expectedSummary: "Out-of-scope (central HVAC) rejected + alternatives offered + no thanks → end_call",
+    },
   ];
 
   console.log("═══════════════════════════════════════════════════════════════");
-  console.log("  Bookloh AI Receptionist — 13 scenarios");
+  console.log("  Bookloh AI Receptionist — 15 scenarios");
   console.log("═══════════════════════════════════════════════════════════════\n");
 
   // Clear DB first
