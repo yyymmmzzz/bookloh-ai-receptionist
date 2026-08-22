@@ -51,14 +51,9 @@ export async function POST(req: NextRequest) {
     const supabase = getServiceClient();
 
     // ONLY delete test data. demo + production are protected.
-    const { error: nErr } = await supabase
-      .from("notifications")
-      .delete()
-      .neq("data_source", "demo");
-    const { error: cErr } = await supabase
-      .from("call_events")
-      .delete()
-      .neq("data_source", "demo");
+    // notifications and call_events don't have a data_source column, so we
+    // can't filter them by source. We just don't touch them at all (they're
+    // transient event logs, not business-critical data).
     const { error: wErr } = await supabase
       .from("work_orders")
       .delete()
@@ -67,14 +62,11 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({
       ok: true,
       cleared: {
-        notifications: !nErr,
-        call_events: !cErr,
         work_orders: !wErr,
       },
-      kept: "demo (49) + production (N) records preserved — only test data cleared",
+      kept: "demo (49) + production (N) records preserved — only test work_orders cleared",
+      not_touched: "notifications + call_events (no data_source column; preserved as-is)",
       errors: {
-        notifications: nErr?.message,
-        call_events: cErr?.message,
         work_orders: wErr?.message,
       },
     });
