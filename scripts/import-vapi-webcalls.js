@@ -185,9 +185,7 @@ function extractFromMessages(detail) {
           } catch {}
         } else if (fn.name === "get_price_quote") {
           try {
-            const args = typeof fn.arguments === "string" ? JSON.parse(fn.arguments) : fn.arguments;
-            // get_price_quote is the LAST call AI makes for an issue — so this
-            // takes priority over check_trade for determining the final issue type
+            const args = typeof fn.arguments === "string" ? JSON.parse(fn.arguments) : fn.functions.issue_type;
             if (args?.issue_type) issueType = args.issue_type;
           } catch {}
         }
@@ -240,17 +238,26 @@ function extractFromMessages(detail) {
     }
   }
 
+  // After the loop, pick the LAST accepted check_trade's issue type
+  // (if any), falling back to the first check_trade. This matches
+  // webhook handler in src/lib/order.ts.
+  if (checkTradeResults.length > 0) {
+    const acceptedCheck = [...checkTradeResults].reverse().find(
+      (c) => c.result?.in_trade === true,
+    );
+    const pickedCheck = acceptedCheck || checkTradeResults[0];
+    if (pickedCheck?.args?.issue_type && !issueType) {
+      issueType = pickedCheck.args.issue_type;
+    }
+  }
+
   if (lastEndCall) {
     decision = lastEndCall.outcome || "unsure";
     summary = lastEndCall.summary || null;
   } else if (lastFlagUrgent) {
-    // AI never called end_call but did call flag_urgent
     decision = "urgent";
     summary = lastFlagUrgent.reason || "Marked urgent by AI";
   } else if (lastFlagUncertain) {
-    // AI never called end_call but did call flag_uncertain (couldn't understand
-    // customer, or service area validation failed, etc.) — this is the
-    // "AI hands off to human" case which is a valid callback
     decision = "unsure";
     summary = lastFlagUncertain.reason || "AI escalated to human for callback";
   }
@@ -432,13 +439,26 @@ async function main() {
   const allCalls = await fetchAllCalls();
   console.log(`Fetched ${allCalls.length} total calls from Vapi`);
 
-  // Filter: only inbound phone calls with status=ended and a customer number
-  const eligible = allCalls.filter(
-    (c) => c.type === "inboundPhoneCall" && c.status === "ended" && c.customer?.number,
-  );
+  // Filter: BOTH inbound phone calls AND webCalls with status=ended
+  // Validity criteria (skip noise like 0-message errors or 1-msg hangups):
+  //   - has >5 messages (real conversation, not just "Hello?" + hangup)
+  //   - has at least 1 tool call (AI actually engaged with the workflow)
+  //   - inboundPhoneCall also requires customer.number
+  const eligible = allCalls.filter((c) => {
+    if (c.status !== "ended") return false;
+    if (c.type !== "inboundPhoneCall" && c.type !== "webCall") return false;
+    if (c.type === "inboundPhoneCall" && !c.customer?.number) return false;
+    const msgs = c.messages || [];
+    if (msgs.length < 6) return false;
+    const toolCalls = msgs.reduce((n, m) => n + (m.toolCalls ? m.toolCalls.length : 0), 0);
+    if (toolCalls < 1) return false;
+    return true;
+  });
   const skippedType = allCalls.length - eligible.length;
-  console.log(`  ${eligible.length} are inbound phone calls (eligible for import)`);
-  console.log(`  ${skippedType} skipped (webCall / no customer number / not ended)`);
+  const inboundCount = eligible.filter((c) => c.type === "inboundPhoneCall").length;
+  const webCount = eligible.filter((c) => c.type === "webCall").length;
+  console.log(`  ${eligible.length} are eligible (${inboundCount} inbound + ${webCount} webCall)`);
+  console.log(`  ${skippedType} skipped (not ended / <6 msgs / 0 tool calls / inbound w/o number)`);
 
   const existing = await getExistingCallIds();
   console.log(`  ${existing.size} already in DB (will skip)`);
