@@ -2,7 +2,7 @@ import type { Boss, VapiWebhookPayload, AIDecision, WorkOrder, PricingBreakdown 
 import { getServiceClient } from "./supabase";
 import { notifyBossOfNewOrder } from "./notify";
 import { summarizeCall } from "./call-summary";
-import { summarizeWithFallback } from "./openai-summarize";
+import { summarizeWithFallback, computeSummaryHash } from "./openai-summarize";
 import type { IssueType } from "./types";
 
 /**
@@ -124,8 +124,11 @@ export async function createOrUpdateWorkOrder(
     decision,
     [], // acceptedTopics / rejectedTopics are also extracted via LLM
     [],
+    { callId },
   );
-  console.log(`[order] Call summary via ${summarySource} for call ${callId}`);
+  // Compute summary hash for caching (skips duplicate LLM calls on re-import)
+  const summaryHash = computeSummaryHash(transcript, decision, issueType);
+  console.log(`[order] Call summary via ${summarySource} for call ${callId} (hash=${summaryHash.slice(0, 8)}…)`);
 
   const orderData = {
     boss_id: boss.id,
@@ -152,6 +155,7 @@ export async function createOrUpdateWorkOrder(
     follow_up_notes: callSummary.followUpNotes,
     follow_up_recommended: callSummary.followUpRecommended,
     transcript_coherence: callSummary.transcriptCoherence,
+    summary_hash: summaryHash,
     summary: summary || endOfCall.summary || endOfCall.analysis?.summary || null,
     vapi_call_id: callId,
     data_source: dataSource,

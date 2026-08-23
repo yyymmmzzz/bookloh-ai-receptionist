@@ -109,7 +109,7 @@ export async function POST(req: NextRequest) {
         { callId },
       );
 
-      // Update work_order
+      // Update work_order (also write summary_hash for caching)
       const { error: updateErr } = await supabase
         .from("work_orders")
         .update({
@@ -121,6 +121,8 @@ export async function POST(req: NextRequest) {
           follow_up_notes: summary.followUpNotes,
           follow_up_recommended: summary.followUpRecommended,
           transcript_coherence: summary.transcriptCoherence,
+          // summary_hash is already set in original work_order; we don't
+          // recompute it here because the transcript hasn't changed.
         })
         .eq("id", order.id);
 
