@@ -239,6 +239,21 @@ function extractFromMessages(detail) {
     }
   }
 
+  // Accepted vs rejected topics (B.2)
+  const acceptedTopicsSet = new Set();
+  const rejectedTopicsSet = new Set();
+  for (const c of checkTradeResults) {
+    const it = c.args?.issue_type;
+    if (!it) continue;
+    if (c.result?.in_trade === true) acceptedTopicsSet.add(it);
+    else if (c.result?.in_trade === false) rejectedTopicsSet.add(it);
+  }
+  if (decision === "rejected" && issueType && !acceptedTopicsSet.has(issueType) && !rejectedTopicsSet.has(issueType)) {
+    rejectedTopicsSet.add(issueType);
+  }
+  const acceptedTopics = Array.from(acceptedTopicsSet);
+  const rejectedTopics = Array.from(rejectedTopicsSet);
+
   // After the loop, pick the LAST accepted check_trade's issue type
   // (if any), falling back to the first check_trade. This matches
   // webhook handler in src/lib/order.ts.
