@@ -192,11 +192,78 @@ export default function WorkOrderDetailPage() {
 
       {/* Customer info */}
       <Section title="Customer">
-        <Field label="Name" value={order.customer_name || "—"} />
+        <Field label="Name (caller ID)" value={order.customer_name || "—"} />
+        {(order as any).customer_name_extracted && (order as any).customer_name_extracted !== order.customer_name && (
+          <Field
+            label="Name (from call)"
+            value={(order as any).customer_name_extracted}
+            highlight
+          />
+        )}
         <Field label="Phone" value={order.customer_phone} />
         <Field label="Address" value={order.customer_address || "—"} />
         <Field label="Zip code" value={order.customer_zipcode || "—"} />
       </Section>
+
+      {/* Customer intent + follow-up */}
+      {((order as any).intent_summary || (order as any).customer_tendency || (order as any).mentioned_topics?.length > 0 || (order as any).follow_up_recommended) && (
+        <Section
+          title={
+            <span className="flex items-center gap-2">
+              📋 Customer intent
+              {(order as any).follow_up_priority === "high" && (
+                <span className="inline-flex items-center px-2 py-0.5 text-xs font-medium rounded bg-red-100 text-red-800 border border-red-200">
+                  🔥 High follow-up
+                </span>
+              )}
+              {(order as any).follow_up_priority === "medium" && (
+                <span className="inline-flex items-center px-2 py-0.5 text-xs font-medium rounded bg-amber-100 text-amber-800 border border-amber-200">
+                  ⚠️ Medium follow-up
+                </span>
+              )}
+            </span>
+          }
+        >
+          {(order as any).intent_summary && (
+            <Field
+              label="What they said"
+              value={(order as any).intent_summary}
+              multiline
+            />
+          )}
+          {(order as any).customer_tendency && (
+            <Field
+              label="Tendency"
+              value={
+                <TendencyBadge tendency={(order as any).customer_tendency} />
+              }
+            />
+          )}
+          {(order as any).mentioned_topics && (order as any).mentioned_topics.length > 0 && (
+            <div className="py-2">
+              <div className="text-xs font-medium text-gray-500 uppercase mb-1.5">Topics mentioned</div>
+              <div className="flex flex-wrap gap-1.5">
+                {(order as any).mentioned_topics.map((t: string) => (
+                  <span
+                    key={t}
+                    className="inline-flex items-center px-2.5 py-1 text-xs rounded-full bg-gray-100 text-gray-800 border border-gray-200"
+                  >
+                    {t}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+          {(order as any).follow_up_notes && (
+            <Field
+              label="Why follow up"
+              value={(order as any).follow_up_notes}
+              multiline
+              highlight={(order as any).follow_up_priority === "high"}
+            />
+          )}
+        </Section>
+      )}
 
       {/* Job details */}
       <Section title="Job details">
@@ -306,7 +373,7 @@ export default function WorkOrderDetailPage() {
   );
 }
 
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
+function Section({ title, children }: { title: React.ReactNode; children: React.ReactNode }) {
   return (
     <div className="mt-6 bg-white rounded-lg border border-gray-200 p-4">
       <h2 className="text-sm font-semibold text-gray-900 mb-3">{title}</h2>
@@ -315,12 +382,32 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   );
 }
 
-function Field({ label, value, multiline }: { label: string; value: string; multiline?: boolean }) {
+function Field({ label, value, multiline, highlight }: { label: string; value: React.ReactNode; multiline?: boolean; highlight?: boolean }) {
   return (
-    <div>
+    <div className={highlight ? "bg-amber-50 border border-amber-200 rounded-md p-2 -mx-2" : ""}>
       <div className="text-xs font-medium text-gray-500 uppercase">{label}</div>
       <div className={cn("text-sm text-gray-900 mt-0.5", multiline && "whitespace-pre-wrap")}>{value}</div>
     </div>
+  );
+}
+
+function TendencyBadge({ tendency }: { tendency: string }) {
+  const map: Record<string, { label: string; emoji: string; classes: string }> = {
+    scheduling: { label: "Scheduling", emoji: "📅", classes: "bg-blue-100 text-blue-800 border-blue-200" },
+    service_inquiry: { label: "Service inquiry", emoji: "❓", classes: "bg-purple-100 text-purple-800 border-purple-200" },
+    price_shopping: { label: "Price shopping", emoji: "🛒", classes: "bg-amber-100 text-amber-800 border-amber-200" },
+    considering: { label: "Considering", emoji: "🤔", classes: "bg-slate-100 text-slate-800 border-slate-200" },
+    complaint: { label: "Complaint", emoji: "😠", classes: "bg-red-100 text-red-800 border-red-200" },
+    urgent: { label: "Urgent", emoji: "🚨", classes: "bg-red-100 text-red-800 border-red-200" },
+    uncertain: { label: "Uncertain", emoji: "❔", classes: "bg-gray-100 text-gray-800 border-gray-200" },
+    info_general: { label: "General info", emoji: "💬", classes: "bg-gray-100 text-gray-800 border-gray-200" },
+  };
+  const m = map[tendency] || map.uncertain;
+  return (
+    <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 text-xs font-medium rounded-full border ${m.classes}`}>
+      <span>{m.emoji}</span>
+      <span>{m.label}</span>
+    </span>
   );
 }
 

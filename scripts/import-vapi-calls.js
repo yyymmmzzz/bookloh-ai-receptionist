@@ -22,6 +22,7 @@
 const fs = require("fs");
 const path = require("path");
 const https = require("https");
+const { summarizeCall } = require("./lib/call-summary");
 
 const ENV = fs.readFileSync(path.join(__dirname, "..", ".env.local"), "utf-8");
 const VAPI_API_KEY = ENV.match(/VAPI_API_KEY=(.+)/)[1].trim();
@@ -286,6 +287,9 @@ function buildWorkOrder(call, extracted, bossId) {
     quote_high: extracted.quoteHigh,
     pricing_breakdown: extracted.pricingBreakdown,
     summary: extracted.summary,
+    // Also extract the rich summary (name, tendency, topics, follow-up) from
+    // the transcript using call-summary.js (the JS port of src/lib/call-summary.ts)
+    ...summarizeCallToWorkOrderFields(extracted, call),
     transcript: extracted.transcript
       ? extracted.transcript
           .split("\n")
@@ -306,6 +310,47 @@ function buildWorkOrder(call, extracted, bossId) {
     vapi_call_id: call.id,
     data_source: "production", // imported from real Vapi calls
     created_at: call.startedAt || call.createdAt,
+  };
+}
+
+/**
+ * Run call-summary logic on the raw transcript (Vapi's `artifact.transcript`
+ * is a flat string with "AI:" / "User:" prefixes) and return the additional
+ * work_order fields it generates (customer_name_extracted, intent_summary,
+ * customer_tendency, mentioned_topics, follow_up_*).
+ */
+function summarizeCallToWorkOrderFields(extracted, call) {
+  // Convert raw transcript string to [{role, text}] format for call-summary
+  let transcript = null;
+  if (extracted.transcript && typeof extracted.transcript === "string") {
+    const lines = extracted.transcript.split("\n").filter((l) => l.trim());
+    transcript = lines.map((l) => ({
+      role: l.startsWith("AI:") || l.startsWith("Assistant:") ? "assistant" : "user",
+      text: l.replace(/^(AI:|Assistant:|User:)\s*/, "").trim(),
+    }));
+  } else if (Array.isArray(call.messages)) {
+    // Vapi sometimes returns messages array directly
+    transcript = call.messages
+      .filter((m) => m.role === "user" || m.role === "assistant")
+      .map((m) => ({ role: m.role, text: m.message || m.content || "" }));
+  }
+
+  const callerIdName = call.customer?.name || null;
+  const summary = summarizeCall(
+    transcript,
+    callerIdName,
+    extracted.issueType,
+    extracted.decision,
+  );
+
+  return {
+    customer_name_extracted: summary.customerNameExtracted,
+    intent_summary: summary.intentSummary,
+    customer_tendency: summary.customerTendency,
+    mentioned_topics: summary.mentionedTopics,
+    follow_up_priority: summary.followUpPriority,
+    follow_up_notes: summary.followUpNotes,
+    follow_up_recommended: summary.followUpRecommended,
   };
 }
 
@@ -498,7 +543,8 @@ async function main() {
         updated++;
       } else {
         try {
-          await updateWorkOrder(callSummary.id, {
+          // Always include legacy fields (always available in schema)
+          const patch = {
             recording_url: record.recording_url,
             transcript: record.transcript,
             summary: record.summary,
@@ -507,7 +553,28 @@ async function main() {
             quote_low: record.quote_low,
             quote_high: record.quote_high,
             pricing_breakdown: record.pricing_breakdown,
-          });
+            customer_name_extracted: record.customer_name_extracted,
+            intent_summary: record.intent_summary,
+            customer_tendency: record.customer_tendency,
+            mentioned_topics: record.mentioned_topics,
+            follow_up_priority: record.follow_up_priority,
+            follow_up_notes: record.follow_up_notes,
+            follow_up_recommended: record.follow_up_recommended,
+          };
+          // Use updateOrIgnore — Supabase returns 400 if a field doesn't
+          // exist; we catch and retry without the new fields.
+          try {
+            await updateWorkOrder(callSummary.id, patch);
+          } catch (e) {
+            if (e.message.includes("Could not find") || e.message.includes("column") || e.message.includes("does not exist")) {
+              // Migration 005 not yet run — retry with only legacy fields
+              console.log(`  (skipping call-summary fields — run migration 005 first)`);
+              const { customer_name_extracted, intent_summary, customer_tendency, mentioned_topics, follow_up_priority, follow_up_notes, follow_up_recommended, ...legacy } = patch;
+              await updateWorkOrder(callSummary.id, legacy);
+            } else {
+              throw e;
+            }
+          }
           console.log(`  ↻ REFRESHED  ${tag} (new presigned URL, valid ~30min)`);
           updated++;
         } catch (e) {

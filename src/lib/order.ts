@@ -1,6 +1,7 @@
 import type { Boss, VapiWebhookPayload, AIDecision, WorkOrder, PricingBreakdown } from "./types";
 import { getServiceClient } from "./supabase";
 import { notifyBossOfNewOrder } from "./notify";
+import { summarizeCall } from "./call-summary";
 import type { IssueType } from "./types";
 
 /**
@@ -111,10 +112,21 @@ export async function createOrUpdateWorkOrder(
   // Map decision to status
   const status = mapDecisionToStatus(decision);
 
+  // Extract customer name from transcript (more reliable than caller ID)
+  // and generate follow-up + intent summary
+  const transcript = buildTranscript(endOfCall);
+  const callSummary = summarizeCall(
+    transcript,
+    customerName,
+    issueType,
+    decision,
+  );
+
   const orderData = {
     boss_id: boss.id,
     customer_id: customerId,
     customer_name: customerName,
+    customer_name_extracted: callSummary.customerNameExtracted,
     customer_phone: customerNumber,
     customer_address: customerAddress || null,
     customer_zipcode: customerZipcode || null,
@@ -126,11 +138,17 @@ export async function createOrUpdateWorkOrder(
     quote_low: quoteLow,
     quote_high: quoteHigh,
     pricing_breakdown: pricingBreakdown,
+    intent_summary: callSummary.intentSummary,
+    customer_tendency: callSummary.customerTendency,
+    mentioned_topics: callSummary.mentionedTopics,
+    follow_up_priority: callSummary.followUpPriority,
+    follow_up_notes: callSummary.followUpNotes,
+    follow_up_recommended: callSummary.followUpRecommended,
     summary: summary || endOfCall.summary || endOfCall.analysis?.summary || null,
     vapi_call_id: callId,
     data_source: dataSource,
     recording_url: endOfCall.call?.recordingUrl || null,
-    transcript: buildTranscript(endOfCall),
+    transcript: transcript,
     status,
     updated_at: new Date().toISOString(),
   };
