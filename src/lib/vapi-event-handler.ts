@@ -1,5 +1,5 @@
 import { getServiceClient } from "./supabase";
-import { getDefaultBoss, createOrUpdateWorkOrder } from "./order";
+import { getDefaultBoss, getBossByCountry, createOrUpdateWorkOrder, detectCountryFromPhone } from "./order";
 import type { VapiWebhookPayload } from "./types";
 
 /**
@@ -10,6 +10,10 @@ import type { VapiWebhookPayload } from "./types";
  * pointed at /api/vapi/webhook, but the main assistant's serverUrl
  * still points at /api/vapi/tools (legacy config). If Vapi ever
  * changes which URL events go to, the other route will catch them.
+ *
+ * Multi-region: when a call comes in, we detect the country from the
+ * customer's phone number prefix and use the matching country's boss.
+ * If no country-specific boss is configured, fall back to default (US).
  */
 
 type DataSource = "production" | "test" | "demo";
@@ -31,7 +35,6 @@ export async function handleVapiEvent(
       payload: payload as unknown,
     });
   } catch (err) {
-    // Don't fail the whole flow on logging errors
     console.error(`[vapi] Failed to log ${eventType} event:`, err);
   }
 
@@ -46,16 +49,29 @@ export async function handleVapiEvent(
   }
 
   if (eventType === "tool-calls") {
-    // Tool calls are handled inline by the /api/vapi/tools route — it
-    // needs to return the results back to Vapi in the same response.
-    // So this route just acknowledges them.
     console.log(`[vapi] tool-calls event (${(message.toolCalls || []).length} calls) — should be handled by /tools route`);
     return { handled: false, note: "tool-calls must be handled by /tools" };
   }
 
-  // Other event types (transcript, conversation-update, etc.) are logged
-  // but don't trigger business logic
   return { handled: true, note: `event_type=${eventType} logged but no business action` };
+}
+
+/**
+ * Look up the boss based on the customer's phone number country prefix.
+ * For multi-region, this picks the US / SG / MY / ID boss accordingly.
+ */
+async function pickBossForCall(message: VapiWebhookPayload["message"]) {
+  const customerNumber = message.call?.customer?.number;
+  // Also check the dialed (Vapi) number as fallback — when Vapi sends
+  // end-of-call-report, the customer's number is usually present, but
+  // for some flows (outbound) only the Vapi number is available.
+  const vapiNumber = (message as { phoneNumber?: { number?: string } }).phoneNumber?.number;
+  const candidate = customerNumber || vapiNumber;
+  const country = detectCountryFromPhone(candidate);
+  if (country) {
+    return getBossByCountry(country);
+  }
+  return getDefaultBoss();
 }
 
 async function handleEndOfCall(
@@ -68,10 +84,15 @@ async function handleEndOfCall(
     return;
   }
 
-  const boss = await getDefaultBoss();
+  const boss = await pickBossForCall(message);
   if (!boss) {
     console.error("[vapi] No boss configured — cannot create work order");
     return;
+  }
+  const customerNumber = message.call?.customer?.number;
+  const country = detectCountryFromPhone(customerNumber);
+  if (country && boss.country && boss.country !== country) {
+    console.warn(`[vapi] Country mismatch: customer phone=${country}, boss country=${boss.country} — using ${boss.country} boss anyway`);
   }
 
   const supabase = getServiceClient();
@@ -83,7 +104,7 @@ async function handleEndOfCall(
     .update({ work_order_id: order.id })
     .eq("vapi_call_id", callId);
 
-  console.log(`[vapi] Work order ${order.id} (${order.ai_decision}) created/updated for call ${callId}`);
+  console.log(`[vapi] Work order ${order.id} (${order.ai_decision}) created/updated for call ${callId} (country=${boss.country || "US"})`);
 }
 
 async function handleStatusUpdate(
@@ -95,7 +116,6 @@ async function handleStatusUpdate(
   console.log(`[vapi] Call ${callId} status: ${status}`);
 
   if (status === "in-progress" && callId) {
-    // Create a placeholder work_order so the boss sees the call happening
     const supabase = getServiceClient();
     const { data: existing } = await supabase
       .from("work_orders")
@@ -104,10 +124,11 @@ async function handleStatusUpdate(
       .single();
 
     if (!existing) {
-      const boss = await getDefaultBoss();
+      const boss = await pickBossForCall(message);
       if (!boss) return;
 
       const customerNumber = message.call?.customer?.number || "";
+      const country = detectCountryFromPhone(customerNumber) || boss.country || "US";
       const { data, error } = await supabase
         .from("work_orders")
         .insert({
@@ -118,6 +139,7 @@ async function handleStatusUpdate(
           vapi_call_id: callId,
           summary: "📞 Call in progress...",
           data_source: dataSource,
+          country: country,
         })
         .select()
         .single();
@@ -125,7 +147,7 @@ async function handleStatusUpdate(
       if (error) {
         console.error("[vapi] Failed to create placeholder order:", error);
       } else {
-        console.log(`[vapi] Placeholder work order ${data.id} created for call ${callId}`);
+        console.log(`[vapi] Placeholder work order ${data.id} created for call ${callId} (country=${country})`);
       }
     }
   }

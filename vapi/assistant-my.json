@@ -1,0 +1,144 @@
+{
+  "name": "HandyLine AI Receptionist — Malaysia",
+  "model": {
+    "provider": "openai",
+    "model": "gpt-4o",
+    "temperature": 0.3,
+    "maxTokens": 250
+  },
+  "voice": {
+    "provider": "11labs",
+    "voiceId": "<MY_VOICE_ID_FROM_ELEVENLABS_CLONE>",
+    "model": "eleven_flash_v2_5",
+    "stability": 0.5,
+    "similarityBoost": 0.75,
+    "useSpeakerBoost": true
+  },
+  "firstMessage": "Hey, this is Aiman from Bookloh Malaysia. This call may be recorded for quality, ok. How can I help you today?",
+  "transcriptionProvider": "assemblyai",
+  "transcriptionLanguage": "en",
+  "endCallFunctionEnabled": true,
+  "endCallPhrases": ["bye", "goodbye", "okay thanks", "okay bye", "alright", "take care"],
+  "silenceTimeoutSeconds": 30,
+  "responseDelaySeconds": 0.5,
+  "llmRequestDelaySeconds": 0.5,
+  "interruptionThreshold": 500,
+  "maxDurationSeconds": 600,
+  "serverUrl": "https://YOUR_DOMAIN/api/vapi/tools",
+  "serverUrlSecret": "<<SAME VALUE AS WEBHOOK_SECRET IN YOUR .env>>",
+  "tools": [
+    {
+      "type": "function",
+      "function": {
+        "name": "check_trade",
+        "description": "PHASE 1 CHECK — call this IMMEDIATELY after the customer says what's wrong, BEFORE asking for an address. Checks only whether the issue type is in the boss's trade list. For MY, supported trades: plumbing, electrical, handyman, general. NOT supported: roofing, hvac, landscaping, pest, renovation.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "issue_type": {
+              "type": "string",
+              "enum": ["plumbing", "electrical", "hvac", "handyman", "roofing", "general"],
+              "description": "Type of repair needed"
+            }
+          },
+          "required": ["issue_type"]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "validate_service",
+        "description": "PHASE 2 CHECK — call this only AFTER check_trade has confirmed the issue is in the trade list. Validates the Malaysia postcode is within the boss's service radius. MY service area: Klang Valley (50/47/40) + Penang (10) + JB (20) + KK (80). Out of service: 60+ (Perak/Kedah/Perlis).",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "zipcode": {
+              "type": "string",
+              "description": "Customer's 5-digit Malaysia postcode (e.g. 50000 for KL)"
+            },
+            "issue_type": {
+              "type": "string",
+              "enum": ["plumbing", "electrical", "hvac", "handyman", "roofing", "general"],
+              "description": "Type of repair needed"
+            }
+          },
+          "required": ["zipcode", "issue_type"]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "get_price_quote",
+        "description": "Get a reference price range for a known issue type, plus the trip fee. The trip fee is always RM89 in Malaysia. No fuel surcharge (Klang Valley is compact). Returns the full pricing breakdown so the AI can quote a total estimate in RM.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "issue_type": {
+              "type": "string",
+              "enum": ["plumbing", "electrical", "hvac", "handyman", "roofing", "general"]
+            }
+          },
+          "required": ["issue_type"]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "flag_urgent",
+        "description": "Mark this call as URGENT. Use when the customer describes an emergency (burst pipe, electrical sparking, gas smell, no power in whole house, sewage backup, flooding). The boss will be called back within 5-15 minutes.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "reason": {
+              "type": "string",
+              "description": "Why this is urgent"
+            }
+          },
+          "required": ["reason"]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "flag_uncertain",
+        "description": "Mark this call as needing a callback. Use when the customer wants to talk to a person, you don't understand them, the issue is outside our price list, or anything else requires the boss's input.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "reason": {
+              "type": "string",
+              "description": "Why the boss needs to follow up"
+            }
+          },
+          "required": ["reason"]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "end_call",
+        "description": "End the call with a specific outcome. This tells the system the call is done and what the decision was.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "outcome": {
+              "type": "string",
+              "enum": ["accepted", "urgent", "unsure", "rejected"],
+              "description": "accepted=we'll send someone, urgent=immediate callback, unsure=boss follow-up, rejected=out of scope"
+            },
+            "summary": {
+              "type": "string",
+              "description": "One-sentence summary of the call for the boss's records"
+            }
+          },
+          "required": ["outcome", "summary"]
+        }
+      }
+    }
+  ]
+}

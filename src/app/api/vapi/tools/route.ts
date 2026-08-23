@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getDefaultBoss } from "@/lib/order";
+import { getDefaultBoss, getBossByCountry, detectCountryFromPhone } from "@/lib/order";
 import { validateService, getPriceQuote, checkTrade } from "@/lib/validation";
 import type {
   AIDecision,
@@ -7,33 +7,17 @@ import type {
   ValidateServiceResult,
   GetPriceQuoteResult,
   CheckTradeResult,
+  Boss,
 } from "@/lib/types";
 
 /**
  * Vapi Tools Endpoint — receives function calls from the AI assistant.
  *
- * Vapi sends a single POST with one or more tool calls. We respond with
- * the results in the order Vapi expects.
+ * Multi-region: detects country from call.customer.number and looks up
+ * the country-specific boss. Falls back to default (US) boss if no
+ * country-specific boss is configured yet.
  *
  * Docs: https://docs.vapi.ai/tools/custom-tools
- *
- * Request body (Vapi format):
- * {
- *   message: {
- *     type: "tool-calls",
- *     call: { id, ... },
- *     toolCalls: [
- *       { id: "tc_1", type: "function", function: { name: "validate_service", arguments: {...} } }
- *     ]
- *   }
- * }
- *
- * Response body (Vapi format):
- * {
- *   results: [
- *     { toolCallId: "tc_1", result: "..." }
- *   ]
- * }
  */
 
 interface VapiToolCall {
@@ -48,13 +32,17 @@ interface VapiToolCall {
 interface VapiToolsRequest {
   message: {
     type: string;
-    call?: { id: string };
+    call?: {
+      id: string;
+      customer?: { number?: string };
+      assistantId?: string;
+    };
     toolCalls?: VapiToolCall[];
   };
 }
 
 export async function POST(req: NextRequest) {
-  // Verify webhook secret (same fallback behavior as /api/vapi/webhook)
+  // Verify webhook secret
   const secret = req.headers.get("x-vapi-secret") || req.headers.get("x-webhook-secret");
   if (process.env.WEBHOOK_SECRET && secret && secret !== process.env.WEBHOOK_SECRET) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
@@ -76,14 +64,12 @@ export async function POST(req: NextRequest) {
     console.log(`[tools] Received non-tool event '${eventType}', forwarding to shared handler`);
     try {
       const { handleVapiEvent } = await import("@/lib/vapi-event-handler");
-      const messageObj = body.message as { call?: { orgId?: string } };
       const dataSource: "production" | "test" =
-        messageObj.call?.orgId === "test-org" ? "test" : "production";
+        body.message.call?.assistantId === "test-org" ? "test" : "production";
       await handleVapiEvent(body as unknown as Parameters<typeof handleVapiEvent>[0], dataSource);
     } catch (err) {
       console.error(`[tools] Forward to handler failed:`, err);
     }
-    // Still return an empty result so Vapi doesn't see an error
     return NextResponse.json({ results: [] });
   }
 
@@ -92,7 +78,10 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ results: [] });
   }
 
-  const boss = await getDefaultBoss();
+  // Pick boss by country (from call's customer number)
+  const customerNumber = body.message.call?.customer?.number;
+  const country = detectCountryFromPhone(customerNumber);
+  const boss = country ? await getBossByCountry(country) : await getDefaultBoss();
   if (!boss) {
     console.error("[tools] No boss configured");
     return NextResponse.json(
@@ -100,10 +89,9 @@ export async function POST(req: NextRequest) {
       { status: 500 },
     );
   }
+  console.log(`[tools] Boss for ${country || "default"}: ${boss.company_name} (${boss.country})`);
 
-  // Module-level cache: feed validate_service's distance into the subsequent
-  // get_price_quote call so the AI can quote a total including fuel surcharge.
-  // We reset it at the start of each /tools request (one Vapi call = one request).
+  // Reset per-call cache
   lastValidatedZip = null;
 
   const results = await Promise.all(
@@ -125,15 +113,10 @@ export async function POST(req: NextRequest) {
   return NextResponse.json({ results });
 }
 
-/**
- * Per-call cache for the most recent validate_service result.
- * Vapi sends tool calls in a single POST; we chain validate_service's
- * distance_miles into the next get_price_quote call automatically.
- */
 let lastValidatedZip: { zipcode: string; distance_miles: number | null; ok: boolean } | null = null;
 
 async function dispatchToolCall(
-  boss: Awaited<ReturnType<typeof getDefaultBoss>> & {},
+  boss: Boss,
   tc: VapiToolCall,
 ): Promise<unknown> {
   const { name, arguments: args } = tc.function;
@@ -142,21 +125,17 @@ async function dispatchToolCall(
 
   switch (name) {
     case "check_trade": {
-      // Phase 1: instant trade check, no zip needed. The AI calls this
-      // immediately after the customer says what's wrong, before asking
-      // for an address. If the issue is out of trade, the AI should
-      // politely reject and end the call.
       const issue_type = (args.issue_type as IssueType) || "general";
       const result: CheckTradeResult = checkTrade(boss, issue_type);
       return result;
     }
 
     case "validate_service": {
-      const zipcode = (args.zipcode as string) || "";
+      const postal = (args.zipcode as string) || (args.postal_code as string) || "";
       const issue_type = (args.issue_type as IssueType) || "general";
-      const result: ValidateServiceResult = await validateService(boss, zipcode, issue_type);
+      const result: ValidateServiceResult = await validateService(boss, postal, issue_type);
       lastValidatedZip = {
-        zipcode,
+        zipcode: postal,
         distance_miles: result.distance_miles ?? null,
         ok: result.ok,
       };
@@ -165,8 +144,6 @@ async function dispatchToolCall(
 
     case "get_price_quote": {
       const issue_type = (args.issue_type as IssueType) || "general";
-      // Honor an explicit distance_miles arg, or fall back to the chained
-      // distance from validate_service in this same call.
       const explicitDistance = (args.distance_miles as number | undefined) ?? null;
       const distance = explicitDistance ?? lastValidatedZip?.distance_miles ?? null;
       const result: GetPriceQuoteResult = getPriceQuote(boss, issue_type, distance);
@@ -175,7 +152,6 @@ async function dispatchToolCall(
 
     case "flag_urgent": {
       const reason = (args.reason as string) || "unspecified";
-      // Logged in call_events via the webhook. Return acknowledgment for the AI.
       return { flagged: true, severity: "urgent", reason };
     }
 

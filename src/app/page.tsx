@@ -10,7 +10,7 @@ import type { WorkOrder } from "@/lib/types";
 type DataSource = "demo" | "production" | "test";
 type StatusFilter = "all" | "urgent" | "pending" | "callback";
 type SourceFilter = "all" | DataSource;
-type CountryFilter = "US" | "SEA" | "all";
+type CountryFilter = "US" | "MY" | "SEA" | "all";
 
 const SOURCE_BADGE: Record<DataSource, { label: string; classes: string; emoji: string }> = {
   production: { label: "production", classes: "bg-green-50 text-green-700 border-green-200", emoji: "🟢" },
@@ -20,10 +20,11 @@ const SOURCE_BADGE: Record<DataSource, { label: string; classes: string; emoji: 
 
 function DashboardPageInner() {
   const searchParams = useSearchParams();
-  // Allow ?country=US|SEA|all to set initial filter (used by /sea route)
+  // Allow ?country=US|MY|SEA|all to set initial filter (used by /sea, /my routes)
   const initialCountry: CountryFilter = (() => {
     const c = searchParams.get("country");
-    return c === "SEA" || c === "all" ? c : "US";
+    if (c === "MY" || c === "SEA" || c === "all" || c === "US") return c;
+    return "US";
   })();
   const [orders, setOrders] = useState<WorkOrder[]>([]);
   const [loading, setLoading] = useState(true);
@@ -40,6 +41,7 @@ function DashboardPageInner() {
       .order("created_at", { ascending: false })
       .limit(200);
     if (countryFilter === "US") query = query.or("country.eq.US,country.is.null");
+    else if (countryFilter === "MY") query = query.eq("country", "MY");
     else if (countryFilter === "SEA") query = query.in("country", ["SG", "MY", "ID"]);
 
     query.then(({ data, error }) => {
@@ -149,22 +151,32 @@ function DashboardPageInner() {
         <StatCard label="Callback" value={stats.callback} accent="amber" />
       </div>
 
-      {/* Country / Market filter — top-level tab to switch US vs SEA Test */}
+      {/* Country / Market filter — top-level tab to switch US vs MY vs SEA Test vs All */}
       <div className="flex items-center gap-2 mb-4">
         <span className="text-xs text-gray-500 uppercase tracking-wide">Market:</span>
-        {(["US", "SEA", "all"] as CountryFilter[]).map((c) => {
+        {(["US", "MY", "SEA", "all"] as CountryFilter[]).map((c) => {
           const active = countryFilter === c;
+          const href =
+            c === "US" ? "/" :
+            c === "MY" ? "/my" :
+            c === "SEA" ? "/sea" :
+            "/?country=all";
+          const label =
+            c === "US" ? "🇺🇸 US (Houston)" :
+            c === "MY" ? "🇲🇾 MY (Malaysia)" :
+            c === "SEA" ? "🌏 SEA Test" :
+            "🌍 All";
           return (
             <a
               key={c}
-              href={c === "US" ? "/" : c === "SEA" ? "/sea" : "/?country=all"}
+              href={href}
               className={`px-4 py-1.5 text-sm rounded-md border font-medium ${
                 active
                   ? "bg-gray-900 text-white border-gray-900"
                   : "bg-white text-gray-700 border-gray-200 hover:bg-gray-50"
               }`}
             >
-              {c === "US" ? "🇺🇸 US (Houston)" : c === "SEA" ? "🌏 SEA Test" : "🌍 All"}
+              {label}
             </a>
           );
         })}
@@ -251,6 +263,17 @@ function StatCard({ label, value, accent }: { label: string; value: number; acce
 function WorkOrderRow({ order }: { order: WorkOrder }) {
   const source = (order.data_source || "production") as DataSource;
   const badge = SOURCE_BADGE[source];
+  // Country → currency symbol (denormalized display)
+  const currencySymbol =
+    order.country === "MY" ? "RM" :
+    order.country === "SG" ? "S$" :
+    order.country === "ID" ? "Rp" :
+    "$";
+  const countryFlag =
+    order.country === "MY" ? "🇲🇾" :
+    order.country === "SG" ? "🇸🇬" :
+    order.country === "ID" ? "🇮🇩" :
+    "🇺🇸";
   return (
     <Link
       href={`/orders/${order.id}`}
@@ -265,6 +288,11 @@ function WorkOrderRow({ order }: { order: WorkOrder }) {
             <span className={`inline-flex items-center px-2 py-0.5 text-xs rounded ${statusColor(order.status)}`}>
               {statusLabel(order.status)}
             </span>
+            {order.country && (
+              <span className="inline-flex items-center px-1.5 py-0.5 text-xs font-medium rounded bg-gray-50 text-gray-700 border border-gray-200">
+                {countryFlag} {order.country}
+              </span>
+            )}
             {order.issue_type && (
               <span className="text-xs text-gray-500 capitalize">{order.issue_type}</span>
             )}
@@ -273,18 +301,18 @@ function WorkOrderRow({ order }: { order: WorkOrder }) {
                 className="text-xs text-gray-700 font-medium"
                 title={
                   order.pricing_breakdown.fuel_surcharge > 0
-                    ? `Includes $${order.pricing_breakdown.trip_fee} trip + $${order.pricing_breakdown.fuel_surcharge} fuel surcharge (${order.pricing_breakdown.distance_miles} mi from base)`
-                    : `Includes $${order.pricing_breakdown.trip_fee} trip fee`
+                    ? `Includes ${currencySymbol}${order.pricing_breakdown.trip_fee} trip + ${currencySymbol}${order.pricing_breakdown.fuel_surcharge} fuel surcharge (${order.pricing_breakdown.distance_miles} mi from base)`
+                    : `Includes ${currencySymbol}${order.pricing_breakdown.trip_fee} trip fee`
                 }
               >
-                ${order.pricing_breakdown.total_low}–${order.pricing_breakdown.total_high}
+                {currencySymbol}{order.pricing_breakdown.total_low}–{order.pricing_breakdown.total_high}
                 {order.pricing_breakdown.fuel_surcharge > 0 && (
                   <span className="ml-1 text-amber-600">⛽</span>
                 )}
               </span>
             ) : order.quote_low && order.quote_high ? (
               <span className="text-xs text-gray-700 font-medium">
-                ${order.quote_low}–${order.quote_high}
+                {currencySymbol}{order.quote_low}–{order.quote_high}
               </span>
             ) : null}
             <span

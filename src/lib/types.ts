@@ -30,6 +30,13 @@ export interface Boss {
   company_name: string;
   owner_name: string;
   phone: string;
+  // Multi-region fields (migration 010)
+  country?: string | null;                    // 'US' | 'SG' | 'MY' | 'ID' | ...
+  currency_code?: string;                     // 'USD' | 'SGD' | 'MYR' | 'IDR'
+  currency_symbol?: string;                   // '$' | 'S$' | 'RM' | 'Rp'
+  locale?: string;                            // 'en-US' | 'en-SG' | 'en-MY' | 'id-ID'
+  service_postal_prefixes?: string[];         // For SEA (SG/MY/ID)
+  service_radius_km?: number | null;          // For SEA (alternative to miles)
   service_base_address: string | null;
   service_base_zip: string;
   service_radius_miles: number;
@@ -116,6 +123,8 @@ export interface WorkOrder {
   boss_decision?: "callback_initiated" | "queued" | null;
   // Origin of this record (so demo / test / production can be filtered separately)
   data_source?: "demo" | "production" | "test";
+  // Multi-region field (migration 009). 'US' | 'SG' | 'MY' | 'ID' | ...
+  country?: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -237,4 +246,5 @@ export interface GetPriceQuoteResult {
   range?: { low: number; high: number };
   total_low?: number;
   total_high?: number;
+  currency_symbol?: string;  // '$' | 'S$' | 'RM' | 'Rp'
 }

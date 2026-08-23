@@ -68,6 +68,50 @@ export async function getDefaultBoss(): Promise<Boss | null> {
 }
 
 /**
+ * Look up the boss for a given country code (US / SG / MY / ID / ...).
+ * Returns the first boss row matching the country. Falls back to
+ * getDefaultBoss() (US) if no country-specific boss exists yet.
+ *
+ * Multi-region routing: when a Vapi call comes in, we detect the country
+ * from the customer phone number prefix and use the matching boss. v1
+ * supports 1 boss per country; future: load balance across multiple bosses
+ * in the same country via boss_routing_rules.
+ */
+export async function getBossByCountry(country: string | null | undefined): Promise<Boss | null> {
+  if (!country) return getDefaultBoss();
+  const supabase = getServiceClient();
+  const { data, error } = await supabase
+    .from("bosses")
+    .select("*")
+    .eq("country", country)
+    .limit(1)
+    .maybeSingle();
+
+  if (error) {
+    console.error(`[order] getBossByCountry(${country}) failed:`, error);
+    return getDefaultBoss();
+  }
+  if (!data) {
+    console.warn(`[order] No boss for country=${country}, falling back to default (US)`);
+    return getDefaultBoss();
+  }
+  return data as Boss;
+}
+
+/**
+ * Detect country from a phone number using the dial code prefix.
+ * Returns 'US' | 'SG' | 'MY' | 'ID' | null.
+ */
+export function detectCountryFromPhone(phone: string | null | undefined): "US" | "SG" | "MY" | "ID" | null {
+  if (!phone) return null;
+  if (phone.startsWith("+1")) return "US";
+  if (phone.startsWith("+65")) return "SG";
+  if (phone.startsWith("+60")) return "MY";
+  if (phone.startsWith("+62")) return "ID";
+  return null;
+}
+
+/**
  * Create or update a work order from a Vapi end-of-call report.
  *
  * Strategy:

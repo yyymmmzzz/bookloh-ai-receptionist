@@ -26,22 +26,21 @@ export function checkTrade(
 }
 
 /**
- * Validate that a customer's zip code is within the boss's service area
+ * Validate that a customer's postal/zip code is within the boss's service area
  * AND that the issue type is in the boss's trade list.
+ *
+ * Country-aware (multi-region):
+ * - US: 5-digit zipcode, Google Maps distance (if configured) + zip-prefix fallback
+ * - SG: 6-digit postal code, prefix match (01-20, 22-28)
+ * - MY: 5-digit postcode, prefix match against boss.service_postal_prefixes
+ * - ID: 5-digit postcode, prefix match against boss.service_postal_prefixes
  *
  * Used in Phase 2 of the conversation flow — only called after check_trade
  * has confirmed the issue is in the boss's trade list.
- *
- * Strategy (in priority order):
- * 1. Google Maps Distance Matrix API — if configured and reachable, use exact driving distance
- * 2. Zip-prefix fallback — if Google Maps fails, use a 3-digit prefix match against
- *    the boss's service_zip_prefixes array (default: Houston 770-775)
- *
- * For a real product, replace with a proper geo lookup (Mapbox, HERE, etc.)
  */
 export async function validateService(
   boss: Boss,
-  zipcode: string,
+  postalInput: string,
   issueType: IssueType,
 ): Promise<ValidateServiceResult> {
   // Trade check first (cheap) — in Phase 2 flow this is usually already confirmed
@@ -53,7 +52,30 @@ export async function validateService(
     };
   }
 
-  // Zipcode format check
+  const country = boss.country || "US";
+
+  // Route by country
+  if (country === "US") {
+    return validateUSService(boss, postalInput, issueType);
+  } else if (country === "SG") {
+    return validateSGService(boss, postalInput);
+  } else if (country === "MY") {
+    return validateMYService(boss, postalInput);
+  } else if (country === "ID") {
+    return validateIDService(boss, postalInput);
+  }
+  // Unknown country — fall through to US-style check
+  return validateUSService(boss, postalInput, issueType);
+}
+
+// =====================================================
+// US (5-digit zipcode)
+// =====================================================
+async function validateUSService(
+  boss: Boss,
+  zipcode: string,
+  issueType: IssueType,
+): Promise<ValidateServiceResult> {
   if (!/^\d{5}$/.test(zipcode)) {
     return { ok: false, reason: "Invalid zip code format. Please provide a 5-digit US zip code." };
   }
@@ -62,7 +84,6 @@ export async function validateService(
   const distance = await getDistanceMiles(boss.service_base_zip, zipcode);
 
   if (distance !== null) {
-    // Google Maps gave us an answer — trust it
     if (distance > boss.service_radius_miles) {
       return {
         ok: false,
@@ -73,8 +94,7 @@ export async function validateService(
     return { ok: true, distance_miles: distance };
   }
 
-  // Google Maps failed (not configured, unreachable, or rate limited)
-  // Fall back to zip prefix check
+  // Google Maps failed — fall back to zip prefix check
   const inServiceArea = isInServiceZipPrefixes(zipcode, boss.service_zip_prefixes);
   if (!inServiceArea) {
     console.warn(`[validation] Google Maps failed; zip ${zipcode} not in service prefixes. Rejecting.`);
@@ -88,6 +108,79 @@ export async function validateService(
   return { ok: true, distance_miles: -1 };
 }
 
+// =====================================================
+// Singapore (6-digit postal code)
+// Districts 01-20 (CBD to East Coast) + 22-28 (central-east). Out: 50+ (Jurong/Tuas).
+// =====================================================
+function validateSGService(boss: Boss, postal: string): ValidateServiceResult {
+  if (!/^\d{6}$/.test(postal)) {
+    return { ok: false, reason: "Invalid Singapore postal code. Please provide a 6-digit postal code (e.g. 238859)." };
+  }
+
+  // First 2 digits = district
+  const district = postal.slice(0, 2);
+  const allowedDistricts = boss.service_postal_prefixes && boss.service_postal_prefixes.length > 0
+    ? boss.service_postal_prefixes
+    : ["01","02","03","04","05","06","07","08","09","10","11","12","13","14","15","16","17","18","19","20","22","23","24","25","26","27","28"];
+
+  if (!allowedDistricts.includes(district)) {
+    return {
+      ok: false,
+      reason: `Sorry, postal district ${district} is outside our service area. We cover Singapore districts ${allowedDistricts.join(", ")}.`,
+      distance_miles: -1,
+    };
+  }
+  return { ok: true, distance_miles: -1 };
+}
+
+// =====================================================
+// Malaysia (5-digit postcode, 50xxx=KL, 47xxx=PJ, 40xxx=Shah Alam, 30xxx=Kuantan, 10xxx=Penang, 20xxx=JB, 80xxx=KK)
+// =====================================================
+function validateMYService(boss: Boss, postal: string): ValidateServiceResult {
+  if (!/^\d{5}$/.test(postal)) {
+    return { ok: false, reason: "Invalid Malaysia postcode. Please provide a 5-digit postcode (e.g. 50000 for Kuala Lumpur)." };
+  }
+  const prefix = postal.slice(0, 2);
+  const allowed = boss.service_postal_prefixes && boss.service_postal_prefixes.length > 0
+    ? boss.service_postal_prefixes
+    : ["50","47","40","30","10","20","80"];
+
+  if (!allowed.includes(prefix)) {
+    return {
+      ok: false,
+      reason: `Sorry, postcode area ${prefix}xxx is outside our service area. We cover Klang Valley (50/47/40), Penang (10), JB (20), and KK (80).`,
+      distance_miles: -1,
+    };
+  }
+  return { ok: true, distance_miles: -1 };
+}
+
+// =====================================================
+// Indonesia (5-digit kode pos, 10xxx=Jakarta, 40xxx=Bandung, 60xxx=Surabaya)
+// =====================================================
+function validateIDService(boss: Boss, postal: string): ValidateServiceResult {
+  if (!/^\d{5}$/.test(postal)) {
+    return { ok: false, reason: "Invalid Indonesia kode pos. Please provide a 5-digit kode pos (e.g. 10110 for Jakarta Pusat)." };
+  }
+  const prefix = postal.slice(0, 2);
+  const allowed = boss.service_postal_prefixes && boss.service_postal_prefixes.length > 0
+    ? boss.service_postal_prefixes
+    : ["10","11","12","40","60"];
+
+  if (!allowed.includes(prefix)) {
+    return {
+      ok: false,
+      reason: `Maaf, kode pos area ${prefix}xxx di luar area layanan kami. Kami melayani Jakarta, Bandung, dan Surabaya.`,
+      distance_miles: -1,
+    };
+  }
+  return { ok: true, distance_miles: -1 };
+}
+
+// =====================================================
+// Helpers
+// =====================================================
+
 /**
  * Check if a zip code starts with any of the boss's service prefixes.
  * Default Houston-area prefixes cover 770-775.
@@ -96,13 +189,10 @@ function isInServiceZipPrefixes(
   zipcode: string,
   prefixes: string[] | undefined,
 ): boolean {
-  if (!prefixes || prefixes.length === 0) return true; // No prefixes = accept all
+  if (!prefixes || prefixes.length === 0) return true;
   return prefixes.some((p) => zipcode.startsWith(p));
 }
 
-/**
- * Human-readable description of service area prefixes (for rejection messages).
- */
 function describeServiceArea(prefixes: string[] | undefined): string {
   if (!prefixes || prefixes.length === 0) return "local";
   if (prefixes.length === 1) return `${prefixes[0]}xxx`;
@@ -111,17 +201,18 @@ function describeServiceArea(prefixes: string[] | undefined): string {
 
 /**
  * Compute the fuel surcharge for a given distance.
- *  - If distance is null/undefined, returns 0
- *  - Miles within `free_distance_miles` are free
- *  - Anything beyond is charged at `distance_surcharge_per_mile`
+ * For SEA countries (no Google Maps distance), always returns 0.
+ * For US, if distance is null/undefined, returns 0.
+ * Miles within `free_distance_miles` are free; anything beyond is charged.
  */
 export function computeFuelSurcharge(
   boss: Boss,
   distanceMiles: number | null | undefined,
 ): number {
   if (distanceMiles == null) return 0;
+  // Only US has fuel surcharge logic; SEA is small enough to skip.
+  if (boss.country && boss.country !== "US") return 0;
   const extra = Math.max(0, distanceMiles - boss.free_distance_miles);
-  // Round to nearest dollar — pricing should be predictable
   return Math.round(extra * boss.distance_surcharge_per_mile);
 }
 
@@ -130,8 +221,8 @@ export function computeFuelSurcharge(
  * Returns `available: false` if the issue type is not in the price list —
  * the AI should then trigger the "uncertain" branch and offer a callback.
  *
- * If `distanceMiles` is provided, also computes the fuel surcharge and total.
- * The total range is the issue-type range + total trip fee.
+ * If `distanceMiles` is provided, also computes the fuel surcharge and total
+ * (US only — SEA countries skip the surcharge).
  */
 export function getPriceQuote(
   boss: Boss,
@@ -142,6 +233,7 @@ export function getPriceQuote(
   const tripFee = boss.diagnostic_fee;
   const fuelSurcharge = computeFuelSurcharge(boss, distanceMiles);
   const totalTripFee = tripFee + fuelSurcharge;
+  const symbol = boss.currency_symbol || "$";
 
   if (!band) {
     return {
@@ -150,6 +242,7 @@ export function getPriceQuote(
       fuel_surcharge: fuelSurcharge,
       total_trip_fee: totalTripFee,
       distance_miles: distanceMiles ?? null,
+      currency_symbol: symbol,
     };
   }
 
@@ -162,6 +255,7 @@ export function getPriceQuote(
     range: { low: band.low, high: band.high },
     total_low: band.low + totalTripFee,
     total_high: band.high + totalTripFee,
+    currency_symbol: symbol,
   };
 }
 
@@ -189,7 +283,6 @@ async function getDistanceMiles(originZip: string, destinationZip: string): Prom
     const meters = element?.distance?.value;
     if (typeof meters !== "number") return null;
 
-    // Convert meters to miles
     return meters / 1609.344;
   } catch (err) {
     console.error("[validation] Google Maps Distance Matrix failed:", err);
