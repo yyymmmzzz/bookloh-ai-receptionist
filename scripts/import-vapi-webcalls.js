@@ -240,6 +240,10 @@ function extractFromMessages(detail) {
   }
 
   // Accepted vs rejected topics (B.2)
+  // Three sources of truth, in order of priority:
+  //   1. check_trade tool results (in_trade=true → accepted, false → rejected)
+  //   2. If no check_trade accepted but decision=accepted and issueType set → fallback to issueType
+  //   3. If decision=rejected and issueType not already classified → mark rejected
   const acceptedTopicsSet = new Set();
   const rejectedTopicsSet = new Set();
   for (const c of checkTradeResults) {
@@ -248,11 +252,8 @@ function extractFromMessages(detail) {
     if (c.result?.in_trade === true) acceptedTopicsSet.add(it);
     else if (c.result?.in_trade === false) rejectedTopicsSet.add(it);
   }
-  if (decision === "rejected" && issueType && !acceptedTopicsSet.has(issueType) && !rejectedTopicsSet.has(issueType)) {
-    rejectedTopicsSet.add(issueType);
-  }
-  const acceptedTopics = Array.from(acceptedTopicsSet);
-  const rejectedTopics = Array.from(rejectedTopicsSet);
+  // (fallback for accepted/rejected topics moved to AFTER decision is set,
+  //  see below)
 
   // After the loop, pick the LAST accepted check_trade's issue type
   // (if any), falling back to the first check_trade. This matches
@@ -277,6 +278,16 @@ function extractFromMessages(detail) {
     decision = "unsure";
     summary = lastFlagUncertain.reason || "AI escalated to human for callback";
   }
+
+  // NOW apply accepted/rejected topics fallback — needs decision set above
+  if (decision === "accepted" && issueType && acceptedTopicsSet.size === 0) {
+    acceptedTopicsSet.add(issueType);
+  }
+  if (decision === "rejected" && issueType && !acceptedTopicsSet.has(issueType) && !rejectedTopicsSet.has(issueType)) {
+    rejectedTopicsSet.add(issueType);
+  }
+  const acceptedTopics = Array.from(acceptedTopicsSet);
+  const rejectedTopics = Array.from(rejectedTopicsSet);
 
   if (!summary) {
     summary = detail.summary || detail.analysis?.summary || null;
@@ -358,6 +369,7 @@ function summarizeCallToWorkOrderFields(extracted, call) {
     follow_up_priority: summary.followUpPriority,
     follow_up_notes: summary.followUpNotes,
     follow_up_recommended: summary.followUpRecommended,
+    transcript_coherence: summary.transcriptCoherence,
   };
 }
 

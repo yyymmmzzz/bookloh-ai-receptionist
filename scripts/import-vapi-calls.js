@@ -369,6 +369,7 @@ function summarizeCallToWorkOrderFields(extracted, call) {
     follow_up_priority: summary.followUpPriority,
     follow_up_notes: summary.followUpNotes,
     follow_up_recommended: summary.followUpRecommended,
+    transcript_coherence: summary.transcriptCoherence,
   };
 }
 
