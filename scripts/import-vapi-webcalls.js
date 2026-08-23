@@ -269,7 +269,7 @@ function extractFromMessages(detail) {
 
   transcript = detail.transcript || null;
 
-  return { decision, reason, summary, issueType, zipcode, quoteLow, quoteHigh, pricingBreakdown, transcript };
+  return { decision, reason, summary, issueType, zipcode, quoteLow, quoteHigh, pricingBreakdown, transcript, acceptedTopics, rejectedTopics };
 }
 
 function statusForDecision(decision) {
@@ -288,6 +288,8 @@ function buildWorkOrder(call, extracted, bossId) {
     customer_phone: customer.number || "(unknown)",
     customer_zipcode: extracted.zipcode || null,
     issue_type: extracted.issueType || null,
+    accepted_topics: extracted.acceptedTopics || [],
+    rejected_topics: extracted.rejectedTopics || [],
     ai_decision: extracted.decision,
     ai_decision_reason: extracted.reason,
     quote_low: extracted.quoteLow,
@@ -559,17 +561,30 @@ async function main() {
             intent_summary: record.intent_summary,
             customer_tendency: record.customer_tendency,
             mentioned_topics: record.mentioned_topics,
+            accepted_topics: record.accepted_topics,
+            rejected_topics: record.rejected_topics,
             follow_up_priority: record.follow_up_priority,
             follow_up_notes: record.follow_up_notes,
             follow_up_recommended: record.follow_up_recommended,
+            transcript_coherence: record.transcript_coherence,
           };
           try {
             await updateWorkOrder(callSummary.id, patch);
           } catch (e) {
-            if (e.message.includes("Could not find") || e.message.includes("column") || e.message.includes("does not exist")) {
-              console.log(`  (skipping call-summary fields — run migration 005 first)`);
-              const { customer_name_extracted, intent_summary, customer_tendency, mentioned_topics, follow_up_priority, follow_up_notes, follow_up_recommended, ...legacy } = patch;
-              await updateWorkOrder(callSummary.id, legacy);
+            const msg = e.message || "";
+            if (msg.includes("Could not find") || msg.includes("column") || msg.includes("does not exist")) {
+              console.log(`  (skipping call-summary fields — some migration not yet run)`);
+              const { customer_name_extracted, intent_summary, customer_tendency, mentioned_topics, accepted_topics, rejected_topics, follow_up_priority, follow_up_notes, follow_up_recommended, transcript_coherence, ...legacy } = patch;
+              try {
+                await updateWorkOrder(callSummary.id, patch);
+              } catch (e2) {
+                // Try a different subset
+                try {
+                  await updateWorkOrder(callSummary.id, { ...legacy, customer_name_extracted, intent_summary, customer_tendency, mentioned_topics, follow_up_priority, follow_up_notes, follow_up_recommended });
+                } catch (e3) {
+                  await updateWorkOrder(callSummary.id, legacy);
+                }
+              }
             } else {
               throw e;
             }

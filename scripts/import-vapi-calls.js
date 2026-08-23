@@ -241,6 +241,22 @@ function extractFromMessages(detail) {
     }
   }
 
+  // Accepted vs rejected topics (B.2) — for multi-issue calls
+  const acceptedTopicsSet = new Set();
+  const rejectedTopicsSet = new Set();
+  for (const c of checkTradeResults) {
+    const it = c.args?.issue_type;
+    if (!it) continue;
+    if (c.result?.in_trade === true) acceptedTopicsSet.add(it);
+    else if (c.result?.in_trade === false) rejectedTopicsSet.add(it);
+  }
+  // If end_call rejected, ensure issueType (if set) is in rejected
+  if (decision === "rejected" && issueType && !acceptedTopicsSet.has(issueType) && !rejectedTopicsSet.has(issueType)) {
+    rejectedTopicsSet.add(issueType);
+  }
+  const acceptedTopics = Array.from(acceptedTopicsSet);
+  const rejectedTopics = Array.from(rejectedTopicsSet);
+
   if (lastEndCall) {
     decision = lastEndCall.outcome || "unsure";
     summary = lastEndCall.summary || null;
@@ -262,7 +278,7 @@ function extractFromMessages(detail) {
 
   transcript = detail.transcript || null;
 
-  return { decision, reason, summary, issueType, zipcode, quoteLow, quoteHigh, pricingBreakdown, transcript };
+  return { decision, reason, summary, issueType, zipcode, quoteLow, quoteHigh, pricingBreakdown, transcript, acceptedTopics, rejectedTopics };
 }
 
 function statusForDecision(decision) {
@@ -281,6 +297,8 @@ function buildWorkOrder(call, extracted, bossId) {
     customer_phone: customer.number || "(unknown)",
     customer_zipcode: extracted.zipcode || null,
     issue_type: extracted.issueType || null,
+    accepted_topics: extracted.acceptedTopics || [],
+    rejected_topics: extracted.rejectedTopics || [],
     ai_decision: extracted.decision,
     ai_decision_reason: extracted.reason,
     quote_low: extracted.quoteLow,
@@ -557,20 +575,31 @@ async function main() {
             intent_summary: record.intent_summary,
             customer_tendency: record.customer_tendency,
             mentioned_topics: record.mentioned_topics,
+            accepted_topics: record.accepted_topics,
+            rejected_topics: record.rejected_topics,
             follow_up_priority: record.follow_up_priority,
             follow_up_notes: record.follow_up_notes,
             follow_up_recommended: record.follow_up_recommended,
+            transcript_coherence: record.transcript_coherence,
           };
           // Use updateOrIgnore — Supabase returns 400 if a field doesn't
           // exist; we catch and retry without the new fields.
           try {
             await updateWorkOrder(callSummary.id, patch);
           } catch (e) {
-            if (e.message.includes("Could not find") || e.message.includes("column") || e.message.includes("does not exist")) {
-              // Migration 005 not yet run — retry with only legacy fields
-              console.log(`  (skipping call-summary fields — run migration 005 first)`);
-              const { customer_name_extracted, intent_summary, customer_tendency, mentioned_topics, follow_up_priority, follow_up_notes, follow_up_recommended, ...legacy } = patch;
-              await updateWorkOrder(callSummary.id, legacy);
+            const msg = e.message || "";
+            if (msg.includes("Could not find") || msg.includes("column") || msg.includes("does not exist")) {
+              console.log(`  (some migration fields not yet run — retrying with subset)`);
+              const { customer_name_extracted, intent_summary, customer_tendency, mentioned_topics, accepted_topics, rejected_topics, follow_up_priority, follow_up_notes, follow_up_recommended, transcript_coherence, ...legacy } = patch;
+              try {
+                await updateWorkOrder(callSummary.id, { ...legacy, customer_name_extracted, intent_summary, customer_tendency, mentioned_topics, follow_up_priority, follow_up_notes, follow_up_recommended });
+              } catch (e2) {
+                try {
+                  await updateWorkOrder(callSummary.id, { ...legacy, accepted_topics, rejected_topics, transcript_coherence });
+                } catch (e3) {
+                  await updateWorkOrder(callSummary.id, legacy);
+                }
+              }
             } else {
               throw e;
             }

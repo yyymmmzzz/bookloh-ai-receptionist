@@ -2,6 +2,7 @@ import type { Boss, VapiWebhookPayload, AIDecision, WorkOrder, PricingBreakdown 
 import { getServiceClient } from "./supabase";
 import { notifyBossOfNewOrder } from "./notify";
 import { summarizeCall } from "./call-summary";
+import { summarizeWithFallback } from "./openai-summarize";
 import type { IssueType } from "./types";
 
 /**
@@ -85,7 +86,7 @@ export async function createOrUpdateWorkOrder(
   const customerName = (endOfCall.call?.customer?.name as string | undefined) || null;
 
   // Extract AI decision from tool calls
-  const { decision, reason, issueType, summary, quoteLow, quoteHigh, pricingBreakdown, customerAddress, customerZipcode, issueDetails, preferredTime } =
+  const { decision, reason, issueType, summary, quoteLow, quoteHigh, pricingBreakdown, customerAddress, customerZipcode, issueDetails, preferredTime, acceptedTopics: acceptedTopicsRaw, rejectedTopics: rejectedTopicsRaw } =
     extractCallData(boss, endOfCall);
 
   // Upsert customer
@@ -113,14 +114,18 @@ export async function createOrUpdateWorkOrder(
   const status = mapDecisionToStatus(decision);
 
   // Extract customer name from transcript (more reliable than caller ID)
-  // and generate follow-up + intent summary
+  // and generate follow-up + intent summary. Uses LLM if OPENAI_API_KEY is
+  // set, otherwise falls back to regex (call-summary.ts).
   const transcript = buildTranscript(endOfCall);
-  const callSummary = summarizeCall(
+  const { summary: callSummary, source: summarySource } = await summarizeWithFallback(
     transcript,
     customerName,
     issueType,
     decision,
+    [], // acceptedTopics / rejectedTopics are also extracted via LLM
+    [],
   );
+  console.log(`[order] Call summary via ${summarySource} for call ${callId}`);
 
   const orderData = {
     boss_id: boss.id,
@@ -141,9 +146,12 @@ export async function createOrUpdateWorkOrder(
     intent_summary: callSummary.intentSummary,
     customer_tendency: callSummary.customerTendency,
     mentioned_topics: callSummary.mentionedTopics,
+    accepted_topics: acceptedTopicsRaw,
+    rejected_topics: rejectedTopicsRaw,
     follow_up_priority: callSummary.followUpPriority,
     follow_up_notes: callSummary.followUpNotes,
     follow_up_recommended: callSummary.followUpRecommended,
+    transcript_coherence: callSummary.transcriptCoherence,
     summary: summary || endOfCall.summary || endOfCall.analysis?.summary || null,
     vapi_call_id: callId,
     data_source: dataSource,
@@ -155,23 +163,80 @@ export async function createOrUpdateWorkOrder(
 
   let order: WorkOrder | null = null;
 
-  if (existing) {
-    const { data, error } = await supabase
-      .from("work_orders")
-      .update(orderData)
-      .eq("id", existing.id)
-      .select()
-      .single();
-    if (error) throw new Error(`Failed to update work order: ${error.message}`);
-    order = data as WorkOrder;
-  } else {
-    const { data, error } = await supabase
-      .from("work_orders")
-      .insert(orderData)
-      .select()
-      .single();
-    if (error) throw new Error(`Failed to create work order: ${error.message}`);
-    order = data as WorkOrder;
+  // Try writing all fields. If Supabase rejects (column doesn't exist —
+  // migration 005/006 not yet run), fall back to legacy-only fields.
+  const legacyFields = {
+    boss_id: orderData.boss_id,
+    customer_id: orderData.customer_id,
+    customer_name: orderData.customer_name,
+    customer_phone: orderData.customer_phone,
+    customer_address: orderData.customer_address,
+    customer_zipcode: orderData.customer_zipcode,
+    issue_type: orderData.issue_type,
+    issue_details: orderData.issue_details,
+    preferred_time: orderData.preferred_time,
+    ai_decision: orderData.ai_decision,
+    ai_decision_reason: orderData.ai_decision_reason,
+    quote_low: orderData.quote_low,
+    quote_high: orderData.quote_high,
+    pricing_breakdown: orderData.pricing_breakdown,
+    summary: orderData.summary,
+    vapi_call_id: orderData.vapi_call_id,
+    data_source: orderData.data_source,
+    recording_url: orderData.recording_url,
+    transcript: orderData.transcript,
+    status: orderData.status,
+    updated_at: orderData.updated_at,
+  };
+  const newFields005 = {
+    customer_name_extracted: orderData.customer_name_extracted,
+    intent_summary: orderData.intent_summary,
+    customer_tendency: orderData.customer_tendency,
+    mentioned_topics: orderData.mentioned_topics,
+    follow_up_priority: orderData.follow_up_priority,
+    follow_up_notes: orderData.follow_up_notes,
+    follow_up_recommended: orderData.follow_up_recommended,
+  };
+  const newFields006 = {
+    accepted_topics: orderData.accepted_topics,
+    rejected_topics: orderData.rejected_topics,
+    transcript_coherence: orderData.transcript_coherence,
+  };
+
+  async function tryWrite(payload: Record<string, unknown>): Promise<WorkOrder> {
+    if (existing) {
+      const { data, error } = await supabase
+        .from("work_orders")
+        .update(payload)
+        .eq("id", existing.id)
+        .select()
+        .single();
+      if (error) throw new Error(error.message);
+      return data as WorkOrder;
+    } else {
+      const { data, error } = await supabase
+        .from("work_orders")
+        .insert(payload)
+        .select()
+        .single();
+      if (error) throw new Error(error.message);
+      return data as WorkOrder;
+    }
+  }
+
+  // Try writing all fields. Cascade down: all → 005+legacy → legacy only.
+  try {
+    order = await tryWrite(orderData);
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    console.warn(`[order] Full write failed (${msg.slice(0, 80)}) — trying 005 + legacy`);
+    try {
+      order = await tryWrite({ ...legacyFields, ...newFields005 });
+    } catch (e2) {
+      const msg2 = e2 instanceof Error ? e2.message : String(e2);
+      console.warn(`[order] 005+legacy write failed (${msg2.slice(0, 80)}) — trying legacy only`);
+      order = await tryWrite(legacyFields);
+    }
   }
 
   // Notify the boss about the new work order
@@ -225,6 +290,8 @@ interface ExtractedCallData {
   customerZipcode: string | null;
   issueDetails: string | null;
   preferredTime: string | null;
+  acceptedTopics: string[];
+  rejectedTopics: string[];
 }
 
 /**
@@ -299,6 +366,46 @@ function extractCallData(
     (validateService?.function.arguments?.issue_type as IssueType | undefined) ||
     (getPriceQuote?.function.arguments?.issue_type as IssueType | undefined) ||
     null;
+
+  // Accepted vs Rejected topics (B.2) — for multi-issue calls, we split
+  // topics by which check_trade result was in_trade=true vs false.
+  // Used by the dashboard to show the full conversation story (e.g.
+  // Matt: accepted ["hvac"], rejected ["roof"]).
+  // We need to look up each check_trade's RESULT in messages, because
+  // toolCallList sometimes doesn't include the result inline.
+  const checkTradeResultsById = new Map<string, unknown>(); // toolCallId -> result
+  for (const m of messages as Array<{ role?: string; name?: string; toolCallId?: string; result?: unknown }>) {
+    // Vapi uses role="tool" with name=tool_name for tool call results
+    if ((m.role === "tool_call_result" || m.role === "tool") && m.name === "check_trade" && m.toolCallId) {
+      try {
+        const r = typeof m.result === "string" ? JSON.parse(m.result) : m.result;
+        checkTradeResultsById.set(m.toolCallId, r);
+      } catch {
+        // ignore
+      }
+    }
+  }
+  const acceptedTopicsSet = new Set<string>();
+  const rejectedTopicsSet = new Set<string>();
+  for (const c of allCheckTrades) {
+    let inTrade: boolean | null = null;
+    const r = checkTradeResultsById.get(c.id) ?? c.function?.result;
+    if (r) {
+      try {
+        const parsed = typeof r === "string" ? JSON.parse(r) : r;
+        inTrade = (parsed as { in_trade?: boolean })?.in_trade === true;
+      } catch {
+        inTrade = null;
+      }
+    }
+    const it = c.function?.arguments?.issue_type as string | undefined;
+    if (!it) continue;
+    if (inTrade === true) acceptedTopicsSet.add(it);
+    else if (inTrade === false) rejectedTopicsSet.add(it);
+  }
+  if (decision === "rejected" && issueType && !acceptedTopicsSet.has(issueType) && !rejectedTopicsSet.has(issueType)) {
+    rejectedTopicsSet.add(issueType);
+  }
 
   // Price quote
   let quoteLow: number | null = null;
@@ -405,6 +512,8 @@ function extractCallData(
     customerZipcode,
     issueDetails,
     preferredTime,
+    acceptedTopics: Array.from(acceptedTopicsSet),
+    rejectedTopics: Array.from(rejectedTopicsSet),
   };
 }
 

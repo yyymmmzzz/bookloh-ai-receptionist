@@ -239,9 +239,45 @@ export default function WorkOrderDetailPage() {
               }
             />
           )}
+          {/* Accepted vs rejected topics — shows the full conversation story
+              for multi-issue calls (e.g. Matt: roofing→rejected, hvac→accepted) */}
+          {((order as any).accepted_topics?.length > 0 || (order as any).rejected_topics?.length > 0) && (
+            <div className="py-2 space-y-2">
+              {(order as any).accepted_topics?.length > 0 && (
+                <div>
+                  <div className="text-xs font-medium text-gray-500 uppercase mb-1.5">✓ AI said YES to</div>
+                  <div className="flex flex-wrap gap-1.5">
+                    {(order as any).accepted_topics.map((t: string) => (
+                      <span
+                        key={t}
+                        className="inline-flex items-center px-2.5 py-1 text-xs rounded-full bg-green-100 text-green-800 border border-green-200"
+                      >
+                        {t}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {(order as any).rejected_topics?.length > 0 && (
+                <div>
+                  <div className="text-xs font-medium text-gray-500 uppercase mb-1.5">✗ AI said NO to</div>
+                  <div className="flex flex-wrap gap-1.5">
+                    {(order as any).rejected_topics.map((t: string) => (
+                      <span
+                        key={t}
+                        className="inline-flex items-center px-2.5 py-1 text-xs rounded-full bg-red-100 text-red-800 border border-red-200"
+                      >
+                        {t}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
           {(order as any).mentioned_topics && (order as any).mentioned_topics.length > 0 && (
             <div className="py-2">
-              <div className="text-xs font-medium text-gray-500 uppercase mb-1.5">Topics mentioned</div>
+              <div className="text-xs font-medium text-gray-500 uppercase mb-1.5">All topics mentioned</div>
               <div className="flex flex-wrap gap-1.5">
                 {(order as any).mentioned_topics.map((t: string) => (
                   <span
@@ -253,6 +289,14 @@ export default function WorkOrderDetailPage() {
                 ))}
               </div>
             </div>
+          )}
+          {(order as any).transcript_coherence && (
+            <Field
+              label="Transcript coherence"
+              value={
+                <CoherenceBadge coherence={(order as any).transcript_coherence} />
+              }
+            />
           )}
           {(order as any).follow_up_notes && (
             <Field
@@ -403,6 +447,21 @@ function TendencyBadge({ tendency }: { tendency: string }) {
     info_general: { label: "General info", emoji: "💬", classes: "bg-gray-100 text-gray-800 border-gray-200" },
   };
   const m = map[tendency] || map.uncertain;
+  return (
+    <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 text-xs font-medium rounded-full border ${m.classes}`}>
+      <span>{m.emoji}</span>
+      <span>{m.label}</span>
+    </span>
+  );
+}
+
+function CoherenceBadge({ coherence }: { coherence: string }) {
+  const map: Record<string, { label: string; emoji: string; classes: string }> = {
+    high: { label: "High — clear conversation", emoji: "✅", classes: "bg-green-100 text-green-800 border-green-200" },
+    medium: { label: "Medium", emoji: "🟡", classes: "bg-amber-100 text-amber-800 border-amber-200" },
+    low: { label: "Low — likely wrong number / STT failed", emoji: "⚠️", classes: "bg-red-100 text-red-800 border-red-200" },
+  };
+  const m = map[coherence] || map.medium;
   return (
     <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 text-xs font-medium rounded-full border ${m.classes}`}>
       <span>{m.emoji}</span>
