@@ -5,6 +5,8 @@ import { summarizeCall } from "./call-summary";
 import { summarizeWithFallback, computeSummaryHash } from "./openai-summarize";
 import type { IssueType } from "./types";
 
+type DataSource = "production" | "test" | "demo";
+
 /**
  * Upsert a customer record (match by boss_id + phone).
  */
@@ -76,13 +78,29 @@ export async function createOrUpdateWorkOrder(
   boss: Boss,
   callId: string,
   endOfCall: VapiWebhookPayload["message"],
-  callStart?: VapiWebhookPayload["message"],
-  dataSource: "production" | "test" | "demo" = "production",
+  callStart?: string,
+  dataSource: DataSource = "production",
 ): Promise<WorkOrder> {
+  // Detect country by phone number prefix
+  const customerNumber = endOfCall.call?.customer?.number;
+  let country: string | null = null;
+  if (customerNumber) {
+    if (customerNumber.startsWith("+1")) country = "US";
+    else if (customerNumber.startsWith("+65")) country = "SG";
+    else if (customerNumber.startsWith("+60")) country = "MY";
+    else if (customerNumber.startsWith("+62")) country = "ID";
+  }
+  if (!country && (endOfCall as { phoneNumber?: { number?: string } }).phoneNumber?.number) {
+    const p = (endOfCall as { phoneNumber?: { number?: string } }).phoneNumber!.number!;
+    if (p.startsWith("+1")) country = "US";
+    else if (p.startsWith("+65")) country = "SG";
+    else if (p.startsWith("+60")) country = "MY";
+    else if (p.startsWith("+62")) country = "ID";
+  }
+
   const supabase = getServiceClient();
 
-  // Extract customer info from the call
-  const customerNumber = endOfCall.call?.customer?.number || callStart?.call?.customer?.number || "";
+  // Extract customer info from the call (customerNumber already declared above)
   const customerName = (endOfCall.call?.customer?.name as string | undefined) || null;
 
   // Extract AI decision from tool calls
@@ -159,6 +177,7 @@ export async function createOrUpdateWorkOrder(
     summary: summary || endOfCall.summary || endOfCall.analysis?.summary || null,
     vapi_call_id: callId,
     data_source: dataSource,
+    country: country,
     recording_url: endOfCall.call?.recordingUrl || null,
     transcript: transcript,
     status,

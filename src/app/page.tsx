@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { getBrowserClient } from "@/lib/supabase";
 import { decisionLabel, decisionColor, statusLabel, statusColor, relativeTime, formatDateTime } from "@/lib/utils";
@@ -9,6 +10,7 @@ import type { WorkOrder } from "@/lib/types";
 type DataSource = "demo" | "production" | "test";
 type StatusFilter = "all" | "urgent" | "pending" | "callback";
 type SourceFilter = "all" | DataSource;
+type CountryFilter = "US" | "SEA" | "all";
 
 const SOURCE_BADGE: Record<DataSource, { label: string; classes: string; emoji: string }> = {
   production: { label: "production", classes: "bg-green-50 text-green-700 border-green-200", emoji: "🟢" },
@@ -16,22 +18,31 @@ const SOURCE_BADGE: Record<DataSource, { label: string; classes: string; emoji: 
   demo: { label: "demo", classes: "bg-blue-50 text-blue-700 border-blue-200", emoji: "🟦" },
 };
 
-export default function DashboardPage() {
+function DashboardPageInner() {
+  const searchParams = useSearchParams();
+  // Allow ?country=US|SEA|all to set initial filter (used by /sea route)
+  const initialCountry: CountryFilter = (() => {
+    const c = searchParams.get("country");
+    return c === "SEA" || c === "all" ? c : "US";
+  })();
   const [orders, setOrders] = useState<WorkOrder[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<StatusFilter>("all");
   const [sourceFilter, setSourceFilter] = useState<SourceFilter>("all");
+  const [countryFilter, setCountryFilter] = useState<CountryFilter>(initialCountry);
 
   useEffect(() => {
     const supabase = getBrowserClient();
 
-    // Initial fetch
-    supabase
+    let query = supabase
       .from("work_orders")
       .select("*")
       .order("created_at", { ascending: false })
-      .limit(200)
-      .then(({ data, error }) => {
+      .limit(200);
+    if (countryFilter === "US") query = query.or("country.eq.US,country.is.null");
+    else if (countryFilter === "SEA") query = query.in("country", ["SG", "MY", "ID"]);
+
+    query.then(({ data, error }) => {
         if (error) {
           console.error("[dashboard] Failed to load work orders:", error);
         } else {
@@ -42,7 +53,7 @@ export default function DashboardPage() {
 
     // Subscribe to realtime updates — use a unique channel name per mount
     // to avoid the "postgres_changes after subscribe()" error in React strict mode
-    const channelName = `work_orders_${Math.random().toString(36).slice(2, 10)}`;
+    const channelName = `work_orders_${countryFilter}_${Math.random().toString(36).slice(2, 10)}`;
     const channel = supabase
       .channel(channelName)
       .on(
@@ -136,6 +147,27 @@ export default function DashboardPage() {
         <StatCard label="Urgent" value={stats.urgent} accent="red" />
         <StatCard label="Pending" value={stats.pending} accent="blue" />
         <StatCard label="Callback" value={stats.callback} accent="amber" />
+      </div>
+
+      {/* Country / Market filter — top-level tab to switch US vs SEA Test */}
+      <div className="flex items-center gap-2 mb-4">
+        <span className="text-xs text-gray-500 uppercase tracking-wide">Market:</span>
+        {(["US", "SEA", "all"] as CountryFilter[]).map((c) => {
+          const active = countryFilter === c;
+          return (
+            <a
+              key={c}
+              href={c === "US" ? "/" : c === "SEA" ? "/sea" : "/?country=all"}
+              className={`px-4 py-1.5 text-sm rounded-md border font-medium ${
+                active
+                  ? "bg-gray-900 text-white border-gray-900"
+                  : "bg-white text-gray-700 border-gray-200 hover:bg-gray-50"
+              }`}
+            >
+              {c === "US" ? "🇺🇸 US (Houston)" : c === "SEA" ? "🌏 SEA Test" : "🌍 All"}
+            </a>
+          );
+        })}
       </div>
 
       {/* Data source filter */}
@@ -297,5 +329,14 @@ function EmptyState({ filter, sourceFilter }: { filter: string; sourceFilter: st
         )}
       </p>
     </div>
+  );
+}
+
+export default function DashboardPage() {
+  // Wrap in Suspense because useSearchParams forces dynamic rendering
+  return (
+    <Suspense fallback={null}>
+      <DashboardPageInner />
+    </Suspense>
   );
 }
