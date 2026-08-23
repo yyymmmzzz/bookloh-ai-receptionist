@@ -5,9 +5,8 @@
  * PATCHes the Vapi emergency assistant (id from VAPI_EMERGENCY_ASSISTANT_ID)
  * to use the same Yimo voice clone as the main assistant. Re-runnable.
  *
- * Why this exists: create-emergency-assistant.js was written before we
- * had ElevenLabs wired up, so the original emergency assistant is still
- * on OpenAI alloy. This script catches it up.
+ * Why this exists: keep the emergency assistant in sync with the main
+ * assistant's voice config (Yimo ElevenLabs clone). Re-runnable.
  */
 
 const fs = require("fs");

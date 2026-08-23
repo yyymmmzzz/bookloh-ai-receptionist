@@ -395,7 +395,7 @@ Your server URL: `https://YOUR_DOMAIN/api/vapi/tools`
 |---|---|
 | Model | `gpt-4o` (or `gpt-4o-mini` for cheaper test calls) |
 | Temperature | 0.3 (low — we want consistency, not creativity) |
-| Voice | `alloy` (neutral) or `onyx` (deeper) — try both |
+| Voice | ElevenLabs → `HZrCrY9LUzc3dRxar8U2` (Yimo voice clone) — model `eleven_turbo_v2_5` |
 | First Message | (see above) |
 | Max Duration | 600 seconds (10 min) |
 | End Call Function Enabled | true |

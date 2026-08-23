@@ -82,10 +82,10 @@ You should see one boss record: "Handy Works Home Services / Alex" in the `bosse
    - Alternative: Bring your own Twilio number (see "BYO Twilio" below).
 4. **Assistants → Create Assistant** → **From Scratch** (not from a template).
 5. Configure:
-   - **Name**: "Bookloh AI Receptionist"
+   - **Name**: "HandyLine AI Receptionist — Handy Works"
    - **Model**: OpenAI → `gpt-4o` → temperature 0.3
-   - **Voice**: OpenAI → `alloy` (or try `onyx` for deeper)
-   - **First Message**: `Hi, thanks for calling Handy Works Home Services. This call may be recorded for quality. How can I help you today?`
+   - **Voice**: ElevenLabs → `HZrCrY9LUzc3dRxar8U2` (Yimo voice clone) → model `eleven_turbo_v2_5`
+   - **First Message**: `Hey, this is Alex over at Handy Works Home Services. This call may be recorded for quality. What can I help you with today?`
    - **System Prompt**: Paste the full system prompt from `vapi/system-prompt.md`
    - **End Call Function Enabled**: ON
    - **End Call Silences Timeout**: 30 seconds
@@ -348,12 +348,12 @@ You can also force-disable them by setting `ENABLE_DEV_TOOLS=false` (default: en
 
 ## Production checklist (NOT for this demo, but when you go live)
 
-- [ ] Replace Vapi with self-hosted voice stack (Pipecat + OpenAI Realtime)
+- [ ] Replace Vapi with self-hosted voice stack (Pipecat + GPT-4o Realtime) — only when paid > 500
 - [ ] Add real auth (Supabase Auth or Clerk)
 - [ ] Move from single-boss to multi-tenant with RLS
 - [ ] Plug into real Bookloh EMS API
-- [ ] Add boss real-voice greeting (M4)
-- [ ] Implement outbound AI calls for urgent (M3)
+- [x] ~~Boss real-voice greeting (M4)~~ — done: Yimo 11labs clone
+- [x] ~~Outbound AI calls for urgent (M3)~~ — done: Twilio outbound + IVR
 - [ ] Per-state recording consent (Texas = one-party, California = two-party)
 - [ ] CCPA-compliant data deletion flow
 - [ ] 911 escalation

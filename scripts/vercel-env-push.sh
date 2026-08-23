@@ -61,7 +61,7 @@ while IFS='=' read -r KEY VAL; do
 done < "$ENV_FILE"
 
 echo
-echo "=== Setting NEXT_PUBLIC_APP_URL = https://bookloh-demo.vercel.app ==="
+echo "=== Setting NEXT_PUBLIC_APP_URL = https://demo-navy-chi-47.vercel.app ==="
 # We'll update this after we know the actual Vercel URL
 VERCEL_URL="https://demo-navy-chi-47.vercel.app"
 for ENV in production preview; do

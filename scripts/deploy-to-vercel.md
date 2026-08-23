@@ -11,7 +11,7 @@
 打开 https://vercel.com/new
 
 **方法 A（推荐）：拖拽部署**
-- 把 `/tmp/bookloh-demo.zip` 直接拖到 "Import Project" 页面
+- 把打包好的 Next.js 项目 zip 直接拖到 "Import Project" 页面
 - Vercel 会自动识别为 Next.js 项目
 
 **方法 B：用 Git**
@@ -20,7 +20,7 @@
 
 ### 第 3 步：项目设置
 
-- **Project Name**: `bookloh-demo`（或随便取）
+- **Project Name**: `bookloh-demo` 或 `handyline-demo`（Vercel 上唯一即可）
 - **Framework Preset**: Next.js（自动检测）
 - **Root Directory**: `./`
 - **Build Command**: `next build`（默认）
@@ -59,7 +59,7 @@ TWILIO_BOSS_PHONE = +15127126713
 #### App config
 ```
 WEBHOOK_SECRET = dev-secret
-NEXT_PUBLIC_APP_URL = https://bookloh-demo.vercel.app (改成 Vercel 给你的实际域名)
+NEXT_PUBLIC_APP_URL = https://你的实际-vercel-域名.vercel.app (Vercel 给你的实际域名)
 EMERGENCY_RETRY_INTERVAL_MINUTES = 5
 EMERGENCY_MAX_ATTEMPTS = 3
 EMERGENCY_TEST_MODE = 1  ← **重要：先设 1，避免生产第一单真打电话到老板**
@@ -73,7 +73,7 @@ GOOGLE_MAPS_API_KEY = (如果有 — secret)
 ### 第 5 步：点 Deploy
 
 - 等待 1-3 分钟 build
-- 部署成功会拿到 URL：`https://bookloh-demo.vercel.app`
+- 部署成功会拿到 URL：`https://你的项目名-xxxx.vercel.app`
 
 ### 第 6 步：把 Vapi 切到 Vercel URL
 

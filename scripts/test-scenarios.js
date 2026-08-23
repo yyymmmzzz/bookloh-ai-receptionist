@@ -125,7 +125,7 @@ async function run() {
       customerPhone: "+15551110001",
       duration: 95,
       messages: [
-        { role: "assistant", message: "Hi, thanks for calling Handy Works Home Services. This call may be recorded for quality. How can I help you today?", time: 1000 },
+        { role: "assistant", message: "Hey, this is Alex over at Handy Works Home Services. This call may be recorded for quality. What can I help you with today?", time: 1000 },
         { role: "user", message: "Hi yeah, my kitchen sink is leaking and I'm not really sure what to do about it.", time: 6500 },
         { role: "assistant", message: "I'm sorry to hear that. Is it a slow drip, or is water actually pooling up under the sink?", time: 12000 },
         { role: "user", message: "It's dripping from the faucet itself but there's also a puddle underneath the cabinet.", time: 18000 },
@@ -155,7 +155,7 @@ async function run() {
       customerPhone: "+15551110002",
       duration: 50,
       messages: [
-        { role: "assistant", message: "Hi, thanks for calling Handy Works Home Services. This call may be recorded for quality. How can I help you today?", time: 1000 },
+        { role: "assistant", message: "Hey, this is Alex over at Handy Works Home Services. This call may be recorded for quality. What can I help you with today?", time: 1000 },
         { role: "user", message: "Oh my god, my pipe under the kitchen sink just burst, water is spraying everywhere!", time: 5500 },
         { role: "assistant", message: "Okay, I need you to find your main water shutoff valve and turn it clockwise to stop the water. Do you know where that is?", time: 12500 },
         { role: "user", message: "I think it's outside by the meter, hold on... okay I see it, turning it now.", time: 19000 },
@@ -175,7 +175,7 @@ async function run() {
       customerPhone: "+15551110003",
       duration: 25,
       messages: [
-        { role: "assistant", message: "Hi, thanks for calling Handy Works Home Services. This call may be recorded for quality. How can I help you today?", time: 1000 },
+        { role: "assistant", message: "Hey, this is Alex over at Handy Works Home Services. This call may be recorded for quality. What can I help you with today?", time: 1000 },
         { role: "user", message: "Yeah, can I just talk to a real person please? I don't really want to do this with a machine.", time: 5500 },
         { role: "assistant", message: "Sure, no problem. Can I get your name and a number so Alex can call you back?", time: 11000 },
         { role: "user", message: "Carol Davis, 555-111-0003.", time: 15500 },
@@ -241,7 +241,7 @@ async function run() {
       customerPhone: "+15551110006",
       duration: 80,
       messages: [
-        { role: "assistant", message: "Hi, thanks for calling Handy Works Home Services. This call may be recorded for quality. How can I help you today?", time: 1000 },
+        { role: "assistant", message: "Hey, this is Alex over at Handy Works Home Services. This call may be recorded for quality. What can I help you with today?", time: 1000 },
         { role: "user", message: "Yeah, my outdoor AC unit is making a weird grinding noise. Started yesterday.", time: 7000 },
         { role: "assistant", message: "Got it. Is the unit still cooling okay or has the air gotten warm?", time: 14000 },
         { role: "user", message: "Still cooling, but the noise is new, kind of worried it'll go out on me.", time: 20000 },
@@ -268,7 +268,7 @@ async function run() {
       customerPhone: "+15551110007",
       duration: 55,
       messages: [
-        { role: "assistant", message: "Hi, thanks for calling Handy Works Home Services. This call may be recorded for quality. How can I help you today?", time: 1000 },
+        { role: "assistant", message: "Hey, this is Alex over at Handy Works Home Services. This call may be recorded for quality. What can I help you with today?", time: 1000 },
         { role: "user", message: "Yeah, my septic tank is having issues, there's a really strong smell in the backyard and the ground is soggy near the drain field.", time: 7500 },
         { role: "assistant", message: "Septic systems are a bit outside our normal work, but let me check. What's your zip code?", time: 16500 },
         { role: "user", message: "77019.", time: 20500 },
@@ -290,7 +290,7 @@ async function run() {
       customerPhone: "+15551110008",
       duration: 85,
       messages: [
-        { role: "assistant", message: "Hi, thanks for calling Handy Works Home Services. This call may be recorded for quality. How can I help you today?", time: 1000 },
+        { role: "assistant", message: "Hey, this is Alex over at Handy Works Home Services. This call may be recorded for quality. What can I help you with today?", time: 1000 },
         { role: "user", message: "Hey, I've been putting off a few small things. My kitchen faucet drips, the doorknob on my bedroom is loose, and I'd like to mount a TV on the wall.", time: 9000 },
         { role: "assistant", message: "Sure, we can handle all of that in one visit. What's the zip code?", time: 19500 },
         { role: "user", message: "77006.", time: 23000 },
@@ -315,7 +315,7 @@ async function run() {
       customerPhone: "+15551110009",
       duration: 50,
       messages: [
-        { role: "assistant", message: "Hi, thanks for calling Handy Works Home Services. This call may be recorded for quality. How can I help you today?", time: 1000 },
+        { role: "assistant", message: "Hey, this is Alex over at Handy Works Home Services. This call may be recorded for quality. What can I help you with today?", time: 1000 },
         { role: "user", message: "I think I smell gas in my house, it's in the kitchen near the stove!", time: 5500 },
         { role: "assistant", message: "Okay, this is important. Please don't flip any light switches or use anything that could spark. If you can safely get to your gas meter, turn it off. Are you at home right now?", time: 13000 },
         { role: "user", message: "Yes I'm home, I'm going to go turn it off now.", time: 23500 },
@@ -335,7 +335,7 @@ async function run() {
       customerPhone: "+15551110010",
       duration: 80,
       messages: [
-        { role: "assistant", message: "Hi, thanks for calling Handy Works Home Services. This call may be recorded for quality. How can I help you today?", time: 1000 },
+        { role: "assistant", message: "Hey, this is Alex over at Handy Works Home Services. This call may be recorded for quality. What can I help you with today?", time: 1000 },
         { role: "user", message: "Hi, I'd like to get a ceiling fan installed in my living room, I already bought the fan myself.", time: 7500 },
         { role: "assistant", message: "Sure, we can help with that. What's the address for the install?", time: 14500 },
         { role: "user", message: "1234 Main Street, Houston, 77003.", time: 19000 },
@@ -360,7 +360,7 @@ async function run() {
       customerPhone: "+15551110011",
       duration: 95,
       messages: [
-        { role: "assistant", message: "Hi, thanks for calling Handy Works Home Services. This call may be recorded for quality. How can I help you today?", time: 1000 },
+        { role: "assistant", message: "Hey, this is Alex over at Handy Works Home Services. This call may be recorded for quality. What can I help you with today?", time: 1000 },
         { role: "user", message: "Hi, my garbage disposal is making a terrible noise and barely working. I think it's about to die.", time: 7000 },
         { role: "assistant", message: "Okay, when did you first notice it acting up?", time: 14000 },
         { role: "user", message: "Started a few days ago, getting worse. I'm in League City, 77573.", time: 19000 },

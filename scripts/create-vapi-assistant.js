@@ -165,12 +165,23 @@ const assistant = {
     systemPrompt: systemPrompt,
     tools: TOOLS,
   },
-  voice: {
-    provider: "openai",
-    voiceId: "alloy",
-  },
+  // Default to Yimo 11labs voice clone (matches production). Pass ELEVENLABS_VOICE_ID
+  // and ELEVENLABS_CREDENTIAL_ID in env to override. If unset, falls back to OpenAI alloy.
+  voice: process.env.ELEVENLABS_VOICE_ID
+    ? {
+        provider: "11labs",
+        voiceId: process.env.ELEVENLABS_VOICE_ID,
+        model: "eleven_turbo_v2_5",
+        stability: 0.5,
+        similarityBoost: 0.75,
+        useSpeakerBoost: true,
+      }
+    : { provider: "openai", voiceId: "alloy" },
+  credentialIds: process.env.ELEVENLABS_CREDENTIAL_ID
+    ? [process.env.ELEVENLABS_CREDENTIAL_ID]
+    : [],
   firstMessage:
-    "Hi, thanks for calling Handy Works Home Services. This call may be recorded for quality. How can I help you today?",
+    "Hey, this is Alex over at Handy Works Home Services. This call may be recorded for quality. What can I help you with today?",
   endCallFunctionEnabled: true,
   endCallPhrases: ["goodbye", "have a good day", "thanks bye", "have a great day"],
   silenceTimeoutSeconds: 30,

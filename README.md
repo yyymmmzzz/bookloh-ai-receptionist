@@ -29,9 +29,9 @@ in a dashboard.
 | Live dashboard (Realtime updates) | ✅ |
 | One-tap callback | ✅ |
 | Boss config UI (trades / radius / hours / price list) | ✅ |
-| Boss real-voice greeting | ⏳ (deferred — see PRD M4) |
+| Boss real-voice greeting (Yimo voice clone via ElevenLabs) | ✅ |
 | Multi-boss / multi-tenant | ❌ (single boss only) |
-| Outbound AI calls to boss (urgent) | ❌ (use SMS for now) |
+| Outbound AI calls to boss (urgent, Twilio + IVR) | ✅ (M3 done) |
 | Multi-language | ❌ (English only) |
 | 911 escalation | ❌ |
 
@@ -163,11 +163,11 @@ npm run lint        # ESLint
 When you're ready to move beyond a 3-day demo:
 
 1. **Replace Vapi with your own voice stack** (Pipecat + OpenAI Realtime + Twilio
-   Media Streams). See `docs/upgrade-pipecat.md` (TBD).
+   Media Streams). Tier B — only when paid customers > 500. See BP §3.5.2.
 2. **Plug into real Bookloh EMS** (currently a mock).
 3. **Add multi-boss** (RLS policies, auth, org_id).
-4. **Boss real-voice greeting** (record in dashboard → upload to S3 → Vapi first message).
-5. **Outbound AI calls** (use Vapi's outbound call API for urgent).
+4. ~~Boss real-voice greeting~~ ✅ done — Yimo 11labs voice clone
+5. ~~Outbound AI calls~~ ✅ done — Twilio outbound + IVR (1 = callback, 2 = queue)
 6. **Compliance**: per-state recording notice, CCPA deletion flow, 911 escalation.
 7. **Analytics dashboard** (calls/day, AI self-service rate, etc.).
 
