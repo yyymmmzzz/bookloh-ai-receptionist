@@ -10,7 +10,7 @@ if [ -z "$URL" ]; then
   exit 1
 fi
 
-DEMO_DIR="/Users/yimozhang/Business/Handy Bookloh/demo"
+DEMO_DIR="/Users/yimozhang/Business/HandyBook/demo"
 ENV_FILE="$DEMO_DIR/.env.local"
 
 # Update .env.local

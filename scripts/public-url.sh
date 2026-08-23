@@ -14,7 +14,7 @@ fi
 echo "$URL"
 
 # Check that Vapi serverUrl matches
-ENV_URL=$(grep NEXT_PUBLIC_APP_URL /Users/yimozhang/Business/Handy\ Bookloh/demo/.env.local | cut -d= -f2)
+ENV_URL=$(grep NEXT_PUBLIC_APP_URL /Users/yimozhang/Business/HandyBook/demo/.env.local | cut -d= -f2)
 if [ "$ENV_URL" != "$URL" ]; then
   echo
   echo "⚠️  .env.local has $ENV_URL"

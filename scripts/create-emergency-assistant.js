@@ -42,7 +42,7 @@ The customer info is available as variables you can use in your responses:
 
 When Alex picks up:
 
-1. Greet him like a coworker, not a robot. Say something like: "Hey Alex, this is Bookloh with an urgent one." or "Hey, Bookloh here, got an urgent call."
+1. Greet him like a coworker, not a robot. Say something like: "Hey Alex, this is HandyLine with an urgent one." or "Hey, HandyLine here, got an urgent call."
 2. State the situation in 1-2 sentences: customer name, callback number, and what's broken.
 3. Ask: "Want to call them back now, or should I just queue it for you?"
 4. Wait for his answer.
@@ -56,10 +56,10 @@ Keep the call under 30 seconds. Don't chat, don't ask follow-up questions. Just 
 
 After end_call, the system will log Alex's response and update the work order. Do NOT call any other tools.`;
 
-const firstMessage = "Hey Alex, this is Bookloh with an urgent one.";
+const firstMessage = "Hey Alex, this is HandyLine with an urgent one.";
 
 const body = JSON.stringify({
-  name: "Bookloh Emergency Caller - Alex",
+  name: "HandyLine Emergency Caller - Alex",
   model: {
     provider: "openai",
     model: "gpt-4o",
@@ -93,7 +93,20 @@ const body = JSON.stringify({
       },
     ],
   },
-  voice: { provider: "openai", voiceId: "alloy" },
+  // Alex's voice clone (matches the main assistant's voice config)
+  // 11labs = Vapi's provider string for ElevenLabs
+  // eleven_turbo_v2_5 = lowest-latency model for real-time phone
+  voice: {
+    provider: "11labs",
+    voiceId: process.env.ELEVENLABS_VOICE_ID || "HZrCrY9LUzc3dRxar8U2",
+    model: "eleven_turbo_v2_5",
+    stability: 0.5,
+    similarityBoost: 0.75,
+    useSpeakerBoost: true,
+  },
+  credentialIds: process.env.ELEVENLABS_CREDENTIAL_ID
+    ? [process.env.ELEVENLABS_CREDENTIAL_ID]
+    : [],
   firstMessage,
   endCallFunctionEnabled: true,
   endCallPhrases: ["thanks", "got it", "okay thanks", "alright", "gotcha", "sounds good"],

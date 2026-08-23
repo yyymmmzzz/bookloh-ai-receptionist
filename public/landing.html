@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HandyLine AI — 7×24 AI Phone Receptionist for Home Services Contractors</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    color: #1a1a1a;
+    background: #fafaf8;
+    line-height: 1.6;
+  }
+  .container { max-width: 1100px; margin: 0 auto; padding: 0 24px; }
+
+  /* Nav */
+  nav {
+    background: #fafaf8;
+    border-bottom: 1px solid #e6e6e4;
+    padding: 16px 0;
+    position: sticky; top: 0; z-index: 100;
+  }
+  .nav-inner { display: flex; justify-content: space-between; align-items: center; }
+  .logo { font-size: 22px; font-weight: 800; color: #1b4332; letter-spacing: -0.5px; }
+  .logo span { color: #e87a1e; }
+  .nav-cta {
+    background: #1b4332; color: #fff; padding: 10px 22px;
+    border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 14px;
+    transition: background 0.2s;
+  }
+  .nav-cta:hover { background: #153528; }
+
+  /* Hero */
+  .hero {
+    padding: 80px 0 60px;
+    text-align: center;
+    background: linear-gradient(180deg, #fafaf8 0%, #f0f0ec 100%);
+  }
+  .hero-badge {
+    display: inline-block; background: rgba(232,122,30,0.12); color: #e87a1e;
+    padding: 6px 16px; border-radius: 20px; font-size: 13px; font-weight: 600;
+    margin-bottom: 24px;
+  }
+  .hero h1 {
+    font-size: 48px; font-weight: 800; color: #1b4332;
+    line-height: 1.15; margin-bottom: 20px; letter-spacing: -1px;
+  }
+  .hero h1 em { font-style: normal; color: #e87a1e; }
+  .hero p {
+    font-size: 19px; color: #4a4a4a; max-width: 640px; margin: 0 auto 36px;
+  }
+  .hero-cta-group { display: flex; gap: 16px; justify-content: center; flex-wrap: wrap; }
+  .btn-primary {
+    background: #e87a1e; color: #fff; padding: 16px 36px;
+    border-radius: 10px; text-decoration: none; font-weight: 700; font-size: 17px;
+    transition: transform 0.15s, box-shadow 0.15s;
+    box-shadow: 0 4px 14px rgba(232,122,30,0.35);
+  }
+  .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(232,122,30,0.45); }
+  .btn-secondary {
+    background: #fff; color: #1b4332; padding: 16px 36px;
+    border-radius: 10px; text-decoration: none; font-weight: 700; font-size: 17px;
+    border: 2px solid #1b4332; transition: background 0.2s;
+  }
+  .btn-secondary:hover { background: #f0f0ec; }
+  .hero-note { margin-top: 20px; font-size: 13px; color: #888; }
+
+  /* Stats bar */
+  .stats {
+    background: #1b4332; padding: 48px 0;
+  }
+  .stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 32px; text-align: center; }
+  .stat-number { font-size: 42px; font-weight: 800; color: #e87a1e; }
+  .stat-label { font-size: 14px; color: rgba(255,255,255,0.8); margin-top: 6px; }
+
+  /* Section */
+  section { padding: 72px 0; }
+  .section-label {
+    font-size: 13px; font-weight: 700; color: #e87a1e;
+    text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 12px;
+  }
+  .section-title {
+    font-size: 34px; font-weight: 800; color: #1b4332;
+    margin-bottom: 16px; letter-spacing: -0.5px;
+  }
+  .section-sub { font-size: 17px; color: #4a4a4a; max-width: 600px; margin-bottom: 48px; }
+
+  /* Pain points */
+  .pain-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; }
+  .pain-card {
+    background: #fff; border-radius: 12px; padding: 32px;
+    border: 1px solid #e6e6e4;
+  }
+  .pain-icon { font-size: 32px; margin-bottom: 16px; }
+  .pain-card h3 { font-size: 18px; color: #c82d2d; margin-bottom: 10px; }
+  .pain-card p { font-size: 14px; color: #4a4a4a; }
+
+  /* How it works */
+  .how-section { background: #fff; }
+  .steps { display: grid; grid-template-columns: repeat(5, 1fr); gap: 16px; }
+  .step {
+    text-align: center; padding: 24px 16px;
+    border-radius: 12px; background: #fafaf8; border: 1px solid #e6e6e4;
+  }
+  .step-num {
+    width: 36px; height: 36px; background: #1b4332; color: #fff;
+    border-radius: 50%; display: flex; align-items: center; justify-content: center;
+    font-weight: 700; margin: 0 auto 14px;
+  }
+  .step h4 { font-size: 15px; color: #1b4332; margin-bottom: 6px; }
+  .step p { font-size: 12px; color: #666; }
+
+  /* Features */
+  .feature-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 24px; }
+  .feature-card {
+    background: #fff; border-radius: 12px; padding: 32px;
+    border-left: 4px solid #e87a1e;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+  }
+  .feature-card h3 { font-size: 19px; color: #1b4332; margin-bottom: 10px; }
+  .feature-card p { font-size: 14px; color: #4a4a4a; }
+
+  /* Pricing */
+  .pricing-section { background: #fff; }
+  .pricing-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; }
+  .price-card {
+    background: #fafaf8; border-radius: 14px; padding: 36px 28px;
+    border: 2px solid #e6e6e4; text-align: center;
+  }
+  .price-card.featured { border-color: #e87a1e; background: #fff; box-shadow: 0 8px 30px rgba(232,122,30,0.15); }
+  .price-name { font-size: 18px; font-weight: 700; color: #1b4332; margin-bottom: 8px; }
+  .price-amount { font-size: 42px; font-weight: 800; color: #1b4332; }
+  .price-amount span { font-size: 16px; font-weight: 400; color: #888; }
+  .price-desc { font-size: 13px; color: #666; margin: 12px 0 20px; }
+  .price-features { list-style: none; text-align: left; margin-bottom: 24px; }
+  .price-features li { font-size: 13px; color: #4a4a4a; padding: 6px 0; border-bottom: 1px solid #eee; }
+  .price-features li::before { content: "✓ "; color: #1b4332; font-weight: 700; }
+  .price-btn {
+    display: block; background: #1b4332; color: #fff; padding: 12px;
+    border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 14px;
+  }
+  .price-card.featured .price-btn { background: #e87a1e; }
+
+  /* CTA final */
+  .final-cta {
+    background: #1b4332; padding: 80px 0; text-align: center;
+  }
+  .final-cta h2 { font-size: 36px; color: #fff; margin-bottom: 16px; }
+  .final-cta p { font-size: 18px; color: rgba(255,255,255,0.8); margin-bottom: 32px; }
+  .final-cta .btn-primary { font-size: 18px; padding: 18px 44px; }
+
+  /* Footer */
+  footer {
+    background: #141e1c; padding: 40px 0; text-align: center;
+  }
+  footer p { color: rgba(255,255,255,0.5); font-size: 13px; }
+  footer .logo { color: #fff; margin-bottom: 12px; }
+
+  @media (max-width: 768px) {
+    .hero h1 { font-size: 32px; }
+    .stats-grid, .pain-grid, .pricing-grid { grid-template-columns: 1fr; }
+    .steps { grid-template-columns: repeat(2, 1fr); }
+    .feature-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="container nav-inner">
+    <div class="logo">HandyLine <span>AI</span></div>
+    <a href="#pricing" class="nav-cta">See Pricing</a>
+  </div>
+</nav>
+
+<section class="hero">
+  <div class="container">
+    <div class="hero-badge">🚀 Now in Beta — Houston First</div>
+    <h1>Never Miss a Call.<br>Never Miss a <em>Job.</em></h1>
+    <p>HandyLine AI is a 7×24 AI phone receptionist built exclusively for home services contractors. It answers every call, qualifies leads, books jobs, and syncs to your calendar — so you can focus on the work, not the phone.</p>
+    <div class="hero-cta-group">
+      <a href="tel:+18005550199" class="btn-primary">📞 Call the Demo Now</a>
+      <a href="#how-it-works" class="btn-secondary">See How It Works</a>
+    </div>
+    <p class="hero-note">Call the demo number to hear HandyLine AI in action — no signup needed.</p>
+  </div>
+</section>
+
+<div class="stats">
+  <div class="container stats-grid">
+    <div>
+      <div class="stat-number">85%</div>
+      <div class="stat-label">of callers hang up instead of leaving a voicemail</div>
+    </div>
+    <div>
+      <div class="stat-number">$20-50K</div>
+      <div class="stat-label">average annual revenue lost to missed calls per contractor</div>
+    </div>
+    <div>
+      <div class="stat-number">15 sec</div>
+      <div class="stat-label">average time for HandyLine AI to give callers an answer</div>
+    </div>
+  </div>
+</div>
+
+<section id="pain">
+  <div class="container">
+    <div class="section-label">The Problem</div>
+    <h2 class="section-title">Your phone is your lifeline. But you can't answer it.</h2>
+    <p class="section-sub">When you're on a roof, under a sink, or driving between jobs — every missed call is a missed paycheck.</p>
+    <div class="pain-grid">
+      <div class="pain-card">
+        <div class="pain-icon">🔇</div>
+        <h3>Voicemail Doesn't Work</h3>
+        <p>85% of customers who reach voicemail hang up and call the next contractor. They don't wait.</p>
+      </div>
+      <div class="pain-card">
+        <div class="pain-icon">💰</div>
+        <h3>Receptionist Is Too Expensive</h3>
+        <p>A full-time receptionist costs $3,000–3,500/month, only covers 40 hours/week, and doesn't know the trades.</p>
+      </div>
+      <div class="pain-card">
+        <div class="pain-icon">📉</div>
+        <h3>Lead Platforms Make You Race</h3>
+        <p>Angi, Thumbtack, Google LSA — the contractor who calls back first wins. If you're on a job, you lose.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="how-it-works" class="how-section">
+  <div class="container">
+    <div class="section-label">How It Works</div>
+    <h2 class="section-title">From ring to booked job — in under a minute.</h2>
+    <p class="section-sub">HandyLine AI handles the entire call flow automatically. You just review and confirm.</p>
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">1</div>
+        <h4>Answers</h4>
+        <p>7×24 auto-answer with your real voice greeting</p>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <h4>Qualifies</h4>
+        <p>Asks problem, address, and preferred time</p>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <h4>Decides</h4>
+        <p>Can book / urgent / unsure / can't serve — instant decision</p>
+      </div>
+      <div class="step">
+        <div class="step-num">4</div>
+        <h4>Logs</h4>
+        <p>Summary + recording auto-synced to your EMS calendar</p>
+      </div>
+      <div class="step">
+        <div class="step-num">5</div>
+        <h4>Calls Back</h4>
+        <p>One-tap callback from your phone. No number hunting.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="features">
+  <div class="container">
+    <div class="section-label">Why HandyLine AI</div>
+    <h2 class="section-title">Built for trades, not generic AI.</h2>
+    <p class="section-sub">Every feature is designed around how real contractors actually work.</p>
+    <div class="feature-grid">
+      <div class="feature-card">
+        <h3>🎙️ Real-Voice Greeting</h3>
+        <p>Your actual voice opens every call. Customers don't hear a robot — they hear you. AI voice clone available for full calls.</p>
+      </div>
+      <div class="feature-card">
+        <h3>⚡ 15-Second Answers</h3>
+        <p>Customers don't hang up because they get answers fast — what you fix, where you serve, when you can come. No hold music, no transfers.</p>
+      </div>
+      <div class="feature-card">
+        <h3>🧠 Trade-Specific AI Model</h3>
+        <p>Trained on HVAC, plumbing, electrical, and handyman terminology. Understands "condenser," "GFCI outlet," "septic tank" — and knows what's urgent.</p>
+      </div>
+      <div class="feature-card">
+        <h3>🚨 Urgent Call Escalation</h3>
+        <p>Water everywhere? Gas smell? Full power outage? HandyLine AI calls you immediately — no waiting for a notification.</p>
+      </div>
+      <div class="feature-card">
+        <h3>📅 Auto-Booking to EMS</h3>
+        <p>Every qualified lead becomes a calendar event in Bookloh EMS automatically. Summary, recording, customer info — all there when you finish the job.</p>
+      </div>
+      <div class="feature-card">
+        <h3>📈 Data Flywheel</h3>
+        <p>The more calls you take, the smarter HandyLine gets. It learns your pricing, your service area, your common FAQs — and gets harder for competitors to catch up.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="pricing" class="pricing-section">
+  <div class="container">
+    <div class="section-label">Pricing</div>
+    <h2 class="section-title">Simple plans. No contracts.</h2>
+    <p class="section-sub">Start free for 14 days. Cancel anytime.</p>
+    <div class="pricing-grid">
+      <div class="price-card">
+        <div class="price-name">Starter</div>
+        <div class="price-amount">$39<span>/mo</span></div>
+        <div class="price-desc">For solo operators just getting started</div>
+        <ul class="price-features">
+          <li>Up to 100 calls/month</li>
+          <li>AI voice greeting</li>
+          <li>Call summaries & recordings</li>
+          <li>Email notifications</li>
+          <li>1 phone number</li>
+        </ul>
+        <a href="#" class="price-btn">Start Free Trial</a>
+      </div>
+      <div class="price-card featured">
+        <div class="price-name">Pro</div>
+        <div class="price-amount">$89<span>/mo</span></div>
+        <div class="price-desc">Most popular for growing teams</div>
+        <ul class="price-features">
+          <li>Up to 500 calls/month</li>
+          <li>Real-voice greeting + voice clone</li>
+          <li>EMS calendar auto-booking</li>
+          <li>Urgent call escalation</li>
+          <li>Custom pricing & service area</li>
+          <li>2 phone numbers</li>
+        </ul>
+        <a href="#" class="price-btn">Start Free Trial</a>
+      </div>
+      <div class="price-card">
+        <div class="price-name">Business</div>
+        <div class="price-amount">$179<span>/mo</span></div>
+        <div class="price-desc">For multi-trade teams with high volume</div>
+        <ul class="price-features">
+          <li>Unlimited calls</li>
+          <li>Everything in Pro</li>
+          <li>Multi-trade routing</li>
+          <li>Team permissions & roles</li>
+          <li>API access</li>
+          <li>Priority support</li>
+        </ul>
+        <a href="#" class="price-btn">Start Free Trial</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="final-cta">
+  <div class="container">
+    <h2>Ready to stop missing calls?</h2>
+    <p>Try HandyLine AI free for 14 days. No credit card required.</p>
+    <a href="tel:+18005550199" class="btn-primary">📞 Call the Demo Now</a>
+  </div>
+</section>
+
+<footer>
+  <div class="container">
+    <div class="logo">HandyLine <span style="color:#e87a1e">AI</span></div>
+    <p>7×24 AI Phone Receptionist for Home Services Contractors · Powered by Bookloh EMS</p>
+    <p style="margin-top:8px;">© 2026 HandyLine AI. All rights reserved.</p>
+  </div>
+</footer>
+
+</body>
+</html>

@@ -4,7 +4,7 @@
 
 set -e
 
-ENV_FILE="/Users/yimozhang/Business/Handy Bookloh/demo/.env.local"
+ENV_FILE="/Users/yimozhang/Business/HandyBook/demo/.env.local"
 if [ ! -f "$ENV_FILE" ]; then
   echo "✗ $ENV_FILE not found"
   exit 1
