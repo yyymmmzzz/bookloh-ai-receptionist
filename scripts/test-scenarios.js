@@ -502,7 +502,7 @@ async function run() {
   ];
 
   console.log("═══════════════════════════════════════════════════════════════");
-  console.log("  Bookloh AI Receptionist — 15 scenarios");
+  console.log("  HandyLine AI Receptionist — 15 scenarios");
   console.log("═══════════════════════════════════════════════════════════════\n");
 
   // Clear ONLY test data first (demo + production are always preserved).

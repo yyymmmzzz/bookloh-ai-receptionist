@@ -1,4 +1,4 @@
-# Setup Guide — Bookloh AI Receptionist Demo
+# Setup Guide — HandyLine AI Receptionist Demo
 
 Estimated time: **30-60 minutes** for full setup, **10 minutes** if you just want to see the dashboard with fake data.
 

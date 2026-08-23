@@ -156,7 +156,7 @@ const TOOLS = [
 
 // 2. Build the assistant config (tools nested in model)
 const assistant = {
-  name: "Bookloh AI Receptionist — Handy Works",
+  name: "HandyLine AI Receptionist — Handy Works",
   model: {
     provider: "openai",
     model: "gpt-4o",

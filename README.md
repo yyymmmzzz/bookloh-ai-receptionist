@@ -1,4 +1,4 @@
-# Bookloh AI Receptionist — Demo (Tier A)
+# HandyLine AI Receptionist — Demo (Tier A)
 
 > **Status:** 3-day demo scaffold. Not production. For a real launch, use the
 > PRD as a guide and rebuild with proper auth, observability, and compliance.
