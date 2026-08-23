@@ -18,7 +18,7 @@
  */
 import { NextRequest, NextResponse } from "next/server";
 import { getServiceClient } from "@/lib/supabase";
-import { summarizeWithLLM } from "@/lib/openai-summarize";
+import { summarizeWithLLM, computeSummaryHash } from "@/lib/openai-summarize";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60; // 60s — Vercel Pro limit
@@ -77,7 +77,7 @@ export async function POST(req: NextRequest) {
       // Fetch the work_order
       const { data: order, error: orderErr } = await supabase
         .from("work_orders")
-        .select("id, customer_name, transcript, issue_type, ai_decision, accepted_topics, rejected_topics")
+        .select("id, customer_name, transcript, issue_type, ai_decision, accepted_topics, rejected_topics, summary_hash")
         .eq("vapi_call_id", callId)
         .single();
 
@@ -98,7 +98,10 @@ export async function POST(req: NextRequest) {
         continue;
       }
 
-      // Call LLM
+      // Call LLM (with caching — if summary_hash already exists, skip)
+      // Note: we always pass the callId so the cache check uses the new
+      // hash; if the work_order was reimported with the same transcript,
+      // findCachedSummary will find a match.
       const summary = await summarizeWithLLM(
         transcript,
         order.customer_name,
@@ -106,24 +109,32 @@ export async function POST(req: NextRequest) {
         order.ai_decision,
         order.accepted_topics || [],
         order.rejected_topics || [],
-        { callId },
+        { callId, source: "reclassify" },
       );
 
-      // Update work_order (also write summary_hash for caching)
+      // Update work_order (also write summary_hash if not already set)
+      const updateFields: Record<string, unknown> = {
+        customer_name_extracted: summary.customerNameExtracted,
+        intent_summary: summary.intentSummary,
+        customer_tendency: summary.customerTendency,
+        mentioned_topics: summary.mentionedTopics,
+        follow_up_priority: summary.followUpPriority,
+        follow_up_notes: summary.followUpNotes,
+        follow_up_recommended: summary.followUpRecommended,
+        transcript_coherence: summary.transcriptCoherence,
+      };
+      // Compute and write summary_hash if not already present (so future
+      // re-runs of the same call skip LLM via cache)
+      if (!order.summary_hash) {
+        updateFields.summary_hash = computeSummaryHash(
+          transcript,
+          order.ai_decision,
+          order.issue_type,
+        );
+      }
       const { error: updateErr } = await supabase
         .from("work_orders")
-        .update({
-          customer_name_extracted: summary.customerNameExtracted,
-          intent_summary: summary.intentSummary,
-          customer_tendency: summary.customerTendency,
-          mentioned_topics: summary.mentionedTopics,
-          follow_up_priority: summary.followUpPriority,
-          follow_up_notes: summary.followUpNotes,
-          follow_up_recommended: summary.followUpRecommended,
-          transcript_coherence: summary.transcriptCoherence,
-          // summary_hash is already set in original work_order; we don't
-          // recompute it here because the transcript hasn't changed.
-        })
+        .update(updateFields)
         .eq("id", order.id);
 
       if (updateErr) {

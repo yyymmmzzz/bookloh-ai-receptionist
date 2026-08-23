@@ -268,8 +268,10 @@ export async function summarizeWithFallback(
   decision: string,
   acceptedTopics: string[] = [],
   rejectedTopics: string[] = [],
-  extraContext?: { durationSeconds?: number; callId?: string },
+  extraContext?: { durationSeconds?: number; callId?: string; source?: string },
 ): Promise<{ summary: CallSummary; source: "llm" | "regex" | "cache" }> {
+  // Default source: webhook if callId present, else manual
+  const source = extraContext?.source ?? (extraContext?.callId ? "webhook" : "manual");
   if (process.env.OPENAI_API_KEY) {
     try {
       const result = await summarizeWithLLM(
@@ -279,7 +281,7 @@ export async function summarizeWithFallback(
         decision,
         acceptedTopics,
         rejectedTopics,
-        { ...extraContext, source: extraContext?.callId ? "webhook" : "manual" },
+        { ...extraContext, source },
       );
       return { summary: result, source: "llm" };
     } catch (err) {
