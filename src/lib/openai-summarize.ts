@@ -79,7 +79,7 @@ export async function summarizeWithLLM(
   decision: string,
   acceptedTopics: string[] = [],
   rejectedTopics: string[] = [],
-  extraContext?: { durationSeconds?: number },
+  extraContext?: { durationSeconds?: number; callId?: string },
 ): Promise<CallSummary> {
   if (!process.env.OPENAI_API_KEY) {
     throw new Error("OPENAI_API_KEY not configured — caller should fall back to regex");
@@ -110,6 +110,17 @@ export async function summarizeWithLLM(
     temperature: 0.1,
     max_tokens: 500,
   });
+
+  // Log usage to Vercel console for cost tracking. ~$0.001 per call.
+  const u = completion.usage;
+  if (u) {
+    const inCost = (u.prompt_tokens / 1_000_000) * 0.15;     // gpt-4o-mini input
+    const outCost = (u.completion_tokens / 1_000_000) * 0.60; // gpt-4o-mini output
+    const cost = inCost + outCost;
+    console.log(
+      `[openai-usage] call=${extraContext?.callId ?? "?"} in=${u.prompt_tokens}t out=${u.completion_tokens}t total=${u.total_tokens}t cost=$${cost.toFixed(6)}`,
+    );
+  }
 
   const raw = completion.choices[0].message.content || "{}";
   const parsed = JSON.parse(raw);
