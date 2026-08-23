@@ -54,9 +54,9 @@ interface VapiToolsRequest {
 }
 
 export async function POST(req: NextRequest) {
-  // Verify webhook secret
+  // Verify webhook secret (same fallback behavior as /api/vapi/webhook)
   const secret = req.headers.get("x-vapi-secret") || req.headers.get("x-webhook-secret");
-  if (process.env.WEBHOOK_SECRET && secret !== process.env.WEBHOOK_SECRET) {
+  if (process.env.WEBHOOK_SECRET && secret && secret !== process.env.WEBHOOK_SECRET) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
 
@@ -65,6 +65,26 @@ export async function POST(req: NextRequest) {
     body = await req.json();
   } catch {
     return NextResponse.json({ error: "invalid_json" }, { status: 400 });
+  }
+
+  // If this is NOT a tool-calls event (e.g. Vapi sent end-of-call-report
+  // or status-update to the legacy /tools URL), forward to the shared
+  // event handler. Belt-and-suspenders: phone number + emergency
+  // assistant point at /webhook, but main assistant still points here.
+  const eventType = body.message?.type;
+  if (eventType && eventType !== "tool-calls") {
+    console.log(`[tools] Received non-tool event '${eventType}', forwarding to shared handler`);
+    try {
+      const { handleVapiEvent } = await import("@/lib/vapi-event-handler");
+      const messageObj = body.message as { call?: { orgId?: string } };
+      const dataSource: "production" | "test" =
+        messageObj.call?.orgId === "test-org" ? "test" : "production";
+      await handleVapiEvent(body as unknown as Parameters<typeof handleVapiEvent>[0], dataSource);
+    } catch (err) {
+      console.error(`[tools] Forward to handler failed:`, err);
+    }
+    // Still return an empty result so Vapi doesn't see an error
+    return NextResponse.json({ results: [] });
   }
 
   const toolCalls = body.message?.toolCalls || [];
