@@ -10,7 +10,7 @@ import type { WorkOrder } from "@/lib/types";
 type DataSource = "demo" | "production" | "test";
 type StatusFilter = "all" | "urgent" | "pending" | "callback";
 type SourceFilter = "all" | DataSource;
-type CountryFilter = "US" | "MY" | "SEA" | "all";
+type CountryFilter = "all" | "US" | "MY";
 
 const SOURCE_BADGE: Record<DataSource, { label: string; classes: string; emoji: string }> = {
   production: { label: "production", classes: "bg-green-50 text-green-700 border-green-200", emoji: "🟢" },
@@ -20,10 +20,10 @@ const SOURCE_BADGE: Record<DataSource, { label: string; classes: string; emoji: 
 
 function DashboardPageInner() {
   const searchParams = useSearchParams();
-  // Allow ?country=US|MY|SEA|all to set initial filter (used by /sea, /my routes)
+  // Allow ?country=US|MY|all to set initial filter (used by /my route)
   const initialCountry: CountryFilter = (() => {
     const c = searchParams.get("country");
-    if (c === "MY" || c === "SEA" || c === "all" || c === "US") return c;
+    if (c === "MY" || c === "all" || c === "US") return c;
     return "US";
   })();
   const [orders, setOrders] = useState<WorkOrder[]>([]);
@@ -42,7 +42,7 @@ function DashboardPageInner() {
       .limit(200);
     if (countryFilter === "US") query = query.or("country.eq.US,country.is.null");
     else if (countryFilter === "MY") query = query.eq("country", "MY");
-    else if (countryFilter === "SEA") query = query.in("country", ["SG", "MY", "ID"]);
+    // "all" → no filter, returns all countries
 
     query.then(({ data, error }) => {
         if (error) {
@@ -110,27 +110,8 @@ function DashboardPageInner() {
     test: orders.filter((o) => o.data_source === "test").length,
   };
 
-  // Show the demo banner if any demo data is in the current view
-  const showingDemo = sourceFilter === "all" || sourceFilter === "demo";
-  const demoCount = sourceCounts.demo;
-  const testCount = sourceCounts.test;
-  const productionCount = sourceCounts.production;
-
   return (
     <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
-      {(showingDemo || testCount > 0) && (
-        <div className="mb-6 bg-amber-50 border border-amber-200 rounded-lg p-3 flex items-center gap-3">
-          <div className="text-amber-600 text-lg">ℹ️</div>
-          <div className="flex-1 text-sm text-amber-900">
-            <strong>数据来源说明:</strong>
-            {sourceCounts.demo > 0 && <> <span className="font-mono text-xs bg-white px-1.5 py-0.5 rounded border">🟦 demo ({demoCount})</span> 预填示例;</>}
-            {sourceCounts.test > 0 && <> <span className="font-mono text-xs bg-white px-1.5 py-0.5 rounded border">🟡 test ({testCount})</span> 回归测试;</>}
-            {sourceCounts.production > 0 && <> <span className="font-mono text-xs bg-white px-1.5 py-0.5 rounded border">🟢 production ({productionCount})</span> 真实通话。</>}
-            <span className="block mt-1 text-xs">生产客户看演示时,可切到 <strong>仅 production</strong> 过滤。</span>
-          </div>
-        </div>
-      )}
-
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Work Orders</h1>
@@ -151,21 +132,19 @@ function DashboardPageInner() {
         <StatCard label="Callback" value={stats.callback} accent="amber" />
       </div>
 
-      {/* Country / Market filter — top-level tab to switch US vs MY vs SEA Test vs All */}
+      {/* Market filter — top-level tab to switch All / US / MY */}
       <div className="flex items-center gap-2 mb-4">
         <span className="text-xs text-gray-500 uppercase tracking-wide">Market:</span>
-        {(["US", "MY", "SEA", "all"] as CountryFilter[]).map((c) => {
+        {(["all", "US", "MY"] as CountryFilter[]).map((c) => {
           const active = countryFilter === c;
           const href =
+            c === "all" ? "/?country=all" :
             c === "US" ? "/" :
-            c === "MY" ? "/my" :
-            c === "SEA" ? "/sea" :
-            "/?country=all";
+            "/my";
           const label =
-            c === "US" ? "🇺🇸 US (Houston)" :
-            c === "MY" ? "🇲🇾 MY (Malaysia)" :
-            c === "SEA" ? "🌏 SEA Test" :
-            "🌍 All";
+            c === "all" ? "🌍 All" :
+            c === "US" ? "🇺🇸 US (United States)" :
+            "🇲🇾 MY (Malaysia)";
           return (
             <a
               key={c}
