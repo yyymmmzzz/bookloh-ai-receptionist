@@ -1,6 +1,12 @@
 // Core TypeScript types for the demo
 
-export type IssueType = "plumbing" | "electrical" | "hvac" | "handyman" | "roofing" | "general";
+// Issue types across all regions:
+//   US (home services): plumbing | electrical | hvac | handyman | roofing | general
+//   MY H-Master (security): security | alarm | cctv | autogate | access_control | door_lock | general
+export type IssueType =
+  | "plumbing" | "electrical" | "hvac" | "handyman" | "roofing"
+  | "security" | "alarm" | "cctv" | "autogate" | "access_control" | "door_lock"
+  | "general";
 
 export type AIDecision = "accepted" | "urgent" | "unsure" | "rejected";
 

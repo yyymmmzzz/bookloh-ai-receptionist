@@ -2,18 +2,19 @@
 /**
  * seed-my-demo-data.js
  *
- * Seeds the work_orders table with Malaysia sample data for the
- * Bookloh Malaysia Office demo. Used to populate the MY dashboard
- * so the team can show what a multi-region deployment looks like.
+ * Seeds the work_orders table with H-Master Security Services (Bintulu)
+ * sample data. H-Master is HandyLine AI's first MY client — a security /
+ * alarm / CCTV / autogate company.
  *
- * All records are marked data_source = 'demo' and country = 'MY'
- * so they can be filtered on the /my dashboard view.
+ * All records are marked data_source = 'demo' and country = 'MY' so they
+ * can be filtered on the /my dashboard view.
  *
- * Coverage: 10 realistic MY records spanning accepted / urgent / unsure / rejected,
- * Klang Valley + Penang + JB postcodes, with Manglish-flavored summaries.
+ * Coverage: 10 realistic security records spanning accepted / urgent /
+ * unsure / rejected, Bintulu-area postcodes (97000-97099), Sarawakian
+ * names (Malay / Chinese / Iban / Melanau mix).
  *
  * Run:    node scripts/seed-my-demo-data.js
- * Clear:  node scripts/clear-my-demo-data.js (TBD) or use supabase REST DELETE
+ * Clear:  see scripts/clear-my-demo-data.js (DELETE WHERE country=MY AND data_source=demo)
  */
 
 const fs = require("fs");
@@ -23,87 +24,66 @@ const ENV = fs.readFileSync(path.join(__dirname, "..", ".env.local"), "utf-8");
 const SUPABASE_URL = ENV.match(/NEXT_PUBLIC_SUPABASE_URL=(.+)/)[1].trim();
 const SUPABASE_KEY = ENV.match(/SUPABASE_SERVICE_ROLE_KEY=(.+)/)[1].trim();
 
-// Malaysian Klang Valley + Penang + JB + KK postcodes (in service area)
-const IN_AREA_POSTCODES = {
-  KL: ["50000", "50100", "50200", "50250", "50300", "50400", "50450", "50500", "50600", "50700"],
-  PJ: ["47300", "47301", "47400", "47410", "47500", "47600", "47800", "47810"],
-  ShahAlam: ["40000", "40100", "40150", "40200", "40300", "40400", "40450", "40460", "40500"],
-  Penang: ["10000", "10100", "10200", "10300", "10400", "10450", "10500", "10600", "11000", "11050", "11100"],
-  JB: ["80000", "80100", "80150", "80200", "80250", "80300", "80400", "80500", "80600"],
+// Bintulu + Sarawak north postcodes (in service area)
+const BINTULU_POSTCODES = [
+  "97000", "97007", "97008", "97009", "97010", "97011", "97012", "97013",
+  "97014", "97015", "97100", "97150", "97200", "97210",
+];
+
+// Out of service area
+const OUT_OF_AREA_POSTCODES = {
+  kuching: ["93000", "93100", "93200", "93300", "93400", "93500"],  // Sarawak south
+  miri:    ["98000", "98007", "98008", "98009", "98100", "98200"],  // Sarawak north (Miri)
+  kl:      ["50000", "50100", "50200"],                            // Peninsular (out of scope)
 };
 
-// Out of service area (60xxx = Perak, 50xxx but at boundary)
-const OUT_OF_AREA_POSTCODES = ["30000", "30200", "30400", "31400"]; // Ipoh/Perak
-const OUT_OF_AREA_STATE = "Perak (Ipoh area)";
-
-// KL/PJ streets
-const KL_STREETS = [
-  "Jalan Sultan Ismail", "Jalan Bukit Bintang", "Jalan Ampang", "Jalan Tun Razak",
-  "Jalan Imbi", "Jalan Pudu", "Jalan Kuchai Lama", "Jalan Gombak",
-  "Jalan Cheras", "Jalan Petaling", "Jalan Raja Laut", "Jalan Hang Tuah",
-];
-const PJ_STREETS = [
-  "Jalan SS21/1", "Jalan SS2/24", "Jalan SS3/29", "Jalan SS4c/5",
-  "Jalan SS6/12", "Jalan SS7/26", "Jalan SS12/2", "Jalan SS22/41",
-  "Jalan 14/29", "Jalan 17/56", "Jalan University", "Jalan Gasing",
-];
-const SHAH_ALAM_STREETS = [
-  "Jalan Plumbum 7/100", "Jalan Platinum 7/77", "Jalan Perak 13/16",
-  "Jalan Keluli 7/108", "Jalan Tembaga 7/57", "Jalan Timah 7/50",
-  "Jalan Bestari 1/2", "Jalan Setia Indah U13/12",
-];
-const PENANG_STREETS = [
-  "Jalan Macalister", "Jalan Penang", "Jalan Burma", "Jalan Kelawai",
-  "Jalan Bagan Jermal", "Jalan Tanjung Bungah", "Lebuh Chulia", "Lebuh Light",
-  "Jalan Gottlieb", "Jalan Anson",
-];
-const JB_STREETS = [
-  "Jalan Wong Ah Fook", "Jalan Dhoby", "Jalan Trus", "Jalan Tun Abdul Razak",
-  "Jalan Molek 1/9", "Jalan Austin Heights 8/1",
+// Bintulu streets (real areas in Bintulu)
+const BINTULU_STREETS = [
+  "Jalan Sultan Iskandar", "Jalan Abang Galau", "Jalan Tun Hussein Onn",
+  "Jalan Bendahara", "Jalan Kidurong", "Jalan Tg. Batu", "Jalan Sibiew",
+  "Jalan Stampin", "Jalan Tun Razak", "Jalan Jepak", "Jalan Tatau-Sebauh",
+  "Jalan Sultan Ismail", "Jalan Masjid", "Jalan Brooke", "Jalan Kambar Bujang",
+  "Jalan Persiaran Pelita 1", "Light Industrial Estate",
 ];
 
-// Realistic Malaysian names (Malay / Chinese / Indian mix)
+// Sarawakian names (Malay / Chinese / Iban / Melanau mix)
 const CUSTOMER_NAMES = [
-  "Ahmad Razali", "Siti Nurhaliza", "Tan Wei Ming", "Lim Chong Wei", "Vimala Devi",
-  "Rajesh Kumar", "Nurul Ain", "Chen Mei Ling", "Khairul Anuar", "Priya Menon",
-  "Wong Kar Ying", "Daniel Raj", "Farah Nadia", "Hafiz Rahman", "Sarah Lee",
-  "Mohd Faizal", "Kavitha Ramasamy", "Jason Lim", "Aminah Yusof", "Kenneth Goh",
+  "Mohd Razali bin Ahmad", "Siti Hajar binti Mohd", "Tan Chong Boon",
+  "Ling Siew Hua", "Jong Chiew Ming", "Ricky anak Sumping", "Mary anak Jimbun",
+  "Dayang Nurul Ain", "Wong Kok Ming", "Lim Ah Choo", "Hafiz bin Ismail",
+  "Salasiah binti Yusof", "Joseph Chang", "Chew Mei Yng", "Anak Micheal Bintang",
+  "Fauziah binti Abdul", "David Yong", "Haslina binti Hamid", "Peter Ling",
+  "Rosnah binti Ahmad",
 ];
 
-// Malaysian phone format: +60xx-XXXXXXXX (mobile) or +60x-XXXXXXXX (landline)
-// Common mobile prefixes: 11/12/13/14/15/16/17/18/19 (Maxis/Celcom/Digi)
-// Common landline: 3 (KL), 4 (Shah Alam), 5 (Penang), 7 (JB), 8 (KK)
-function randomPhone(area) {
-  let mobile = "";
-  if (["KL", "PJ", "ShahAlam"].includes(area)) {
-    mobile = "1" + String(Math.floor(10000000 + Math.random() * 89999999)).slice(0, 8);
-  } else if (area === "Penang") {
-    mobile = "1" + String(Math.floor(10000000 + Math.random() * 89999999)).slice(0, 8);
-  } else if (area === "JB") {
-    mobile = "1" + String(Math.floor(10000000 + Math.random() * 89999999)).slice(0, 8);
-  }
-  return `+60${mobile}`;
+// Malaysian phone format: +60 11/12/13/14/15/16/17/18/19 XXXXXXX (mobile)
+// Sarawak mobile common prefixes: 013, 014, 016, 017, 019
+function randomPhone() {
+  const mobilePrefix = ["11","12","13","14","15","16","17","18","19"][Math.floor(Math.random() * 9)];
+  const rest = String(Math.floor(10000000 + Math.random() * 89999999)).slice(0, 8);
+  return `+60${mobilePrefix}${rest}`;
 }
 
-function randomAddress(streets, postcode, city) {
+function randomAddress(postcode) {
   const num = Math.floor(1 + Math.random() * 200);
-  const street = streets[Math.floor(Math.random() * streets.length)];
-  return `${num}, ${street}, ${postcode} ${city}`;
+  const street = BINTULU_STREETS[Math.floor(Math.random() * BINTULU_STREETS.length)];
+  return `${num}, ${street}, ${postcode} Bintulu, Sarawak`;
 }
 
-// Price ranges (RM) — matches the boss's price_list for MY
+// H-Master price ranges (RM) — matches boss.price_list
 const PRICE_RANGES = {
-  plumbing: [80, 350],
-  electrical: [100, 300],
-  handyman: [80, 250],
-  general: [100, 300],
+  security:        [200, 1500],
+  alarm:           [200, 1500],
+  cctv:            [500, 3000],
+  autogate:        [500, 2500],
+  access_control:  [300, 1500],
+  door_lock:       [300, 2000],
+  general:         [150, 800],
 };
-const TRIP_FEE = 89; // RM89 trip fee in Malaysia
-const FREE_DISTANCE = 15;
-const SURCHARGE_PER_MILE = 2; // RM per mile (no fuel surcharge in MY for v1, but include for far cases)
+const TRIP_FEE = 89; // RM89 diagnostic/trip fee in Bintulu
 
 const STATUS_MAP = {
-  accepted: "pending",  // booked, waiting for boss confirmation
+  accepted: "pending",
   urgent: "urgent",
   unsure: "callback",
   rejected: "rejected",
@@ -114,76 +94,84 @@ const PREFERRED_TIMES = [
   "Tomorrow afternoon (2-5pm)",
   "Today afternoon if possible",
   "This Saturday morning",
-  "Friday evening after 6pm",
-  "Wednesday afternoon",
+  "Friday after 5pm",
   "Monday morning",
+  "ASAP — I'm at the shop now",
 ];
 
-// Manglish-flavored issue descriptions
+// Security issue templates (H-Master scenarios)
 const ISSUE_TEMPLATES = {
-  plumbing: {
-    accepted: "Kitchen sink paip bocor, water dripping bawah sinki",
-    urgent: "Paip utama burst bilik air atas, water everywhere, dah shut off main valve",
-    unsure: "Sinki slow drain 2 days already, maybe got clog deep inside",
+  alarm: {
+    accepted: "House alarm keep beeping every 30 minutes, false trigger maybe sensor",
+    urgent: "Alarm triggered at warehouse, no one inside, my staff already went home",
+    unsure: "Old alarm panel, sometimes arm/disarm not working, battery already changed last year",
     rejected: null,
   },
-  electrical: {
-    accepted: "Soket dapur tak boleh on, GFCI keep tripping",
-    urgent: "Suis main sparking, smell like burnt wire, very dangerous",
-    unsure: "Lampu luar flicker every night, cannot tell wayang or wiring problem",
+  cctv: {
+    accepted: "CCTV 2 cameras no signal, DVR showing 'no video', but 4 other cameras OK",
+    urgent: "CCTV whole system down at my shop, no recording since last night, very worried",
+    unsure: "CCTV night vision blurry for 2 weeks, daytime recording OK but night cannot see",
     rejected: null,
   },
-  handyman: {
-    accepted: "Pagar depan 3 panel leaning, kena replace post after strong wind",
+  autogate: {
+    accepted: "Auto gate motor sound strange, slow to open, sometimes stuck halfway",
+    urgent: "Auto gate stuck open since 6pm, no remote working, security risk overnight",
+    unsure: "Auto gate remote need reprogram, lost one, want add new remote",
+    rejected: null,
+  },
+  access_control: {
+    accepted: "Office door card reader not detecting most cards, only 2-3 cards still work",
+    urgent: "Main door access control completely down, staff cannot enter building, it's Monday morning",
+    unsure: "Want to add 5 new cards, also ask if can have mobile app access",
+    rejected: null,
+  },
+  door_lock: {
+    accepted: "Samsung door lock battery low warning, but still can open with fingerprint",
+    urgent: "Door lock completely dead, cannot open from outside, family member locked outside",
+    unsure: "Want to change from key to Samsung digital lock, need recommendation and price",
+    rejected: null,
+  },
+  security: {
+    accepted: "Want to install new CCTV system at new shop, 4 cameras, 1 DVR, full setup",
     urgent: null,
-    unsure: "Dinding garaj ada water stain, not sure if still leaking or already dry",
+    unsure: "Want to upgrade old alarm system to WiFi/LAN monitoring, can H-Master advise?",
     rejected: null,
   },
   general: {
-    accepted: "Cat rumah 3 bilik, nak estimate before book",
-    urgent: "Pokok besar jatuh atas pagar after storm, blocking car masuk",
-    unsure: "Pressure wash driveway and car porch, total about 500 sq ft",
-    rejected: "Customer nak landscaping (potong rumput) - not in our trade list",
+    accepted: "PA system at my sundry shop speaker crackling, need check",
+    urgent: "False alarm at factory every night 2am, neighbours complained, must fix this week",
+    unsure: "Want to bundle security audit with quote for new system",
+    rejected: "Customer wants car alarm installation - not in our scope",
   },
 };
 
-function buildSummary({ state, trade, customer, distanceMiles, fuelSurcharge, totalLow, totalHigh, postcode }) {
+function buildSummary({ state, trade, customer, postcode, totalLow, totalHigh }) {
   const symbol = "RM";
   if (state === "accepted") {
-    const surcharge = fuelSurcharge > 0 ? ` + ${symbol}${fuelSurcharge} fuel surcharge (${distanceMiles} mi from base)` : "";
-    return `${customer.name.split(" ")[0]} - ${ISSUE_TEMPLATES[trade].accepted.split(",")[0]}, ${postcode}, total ${symbol}${totalLow}-${symbol}${totalHigh} (incl ${symbol}${TRIP_FEE} trip${surcharge})`;
+    return `${customer.name.split(" ")[0]} - ${ISSUE_TEMPLATES[trade].accepted.split(",")[0]}, ${postcode}, total ${symbol}${totalLow}-${symbol}${totalHigh} (incl ${symbol}${TRIP_FEE} trip)`;
   }
   if (state === "urgent") {
-    return `${customer.name}: ${ISSUE_TEMPLATES[trade].urgent}, ${postcode} - Aiman callback IMMEDIATELY`;
+    return `${customer.name}: ${ISSUE_TEMPLATES[trade].urgent}, ${postcode} - H-Master callback IMMEDIATELY`;
   }
   if (state === "unsure") {
-    return `${customer.name}: ${ISSUE_TEMPLATES[trade].unsure}, ${postcode} - needs Aiman follow-up`;
+    return `${customer.name}: ${ISSUE_TEMPLATES[trade].unsure}, ${postcode} - needs H-Master follow-up`;
   }
   if (state === "rejected") {
-    return trade === "general"
-      ? "Customer wanted landscaping - not in our trade list, declined"
-      : `Customer in ${OUT_OF_AREA_STATE} - outside Klang Valley service area`;
+    if (trade === "general") {
+      return "Customer wanted car alarm - not in H-Master scope, declined";
+    }
+    return `Customer in ${postcode} - outside H-Master Bintulu service area`;
   }
   return "";
 }
 
-function buildCase({ state, trade, area, postcode, daysAgo, customer, far = false }) {
-  const [low, high] = PRICE_RANGES[trade];
-  let totalLow, totalHigh, distanceMiles, fuelSurcharge = 0, totalTripFee = TRIP_FEE;
-
-  if (far) {
-    distanceMiles = 25 + Math.floor(Math.random() * 15);
-    const extra = distanceMiles - FREE_DISTANCE;
-    fuelSurcharge = Math.round(extra * SURCHARGE_PER_MILE);
-    totalTripFee = TRIP_FEE + fuelSurcharge;
-  } else {
-    distanceMiles = 3 + Math.floor(Math.random() * 12);
-  }
-  totalLow = low + totalTripFee;
-  totalHigh = high + totalTripFee;
+function buildCase({ state, trade, postcode, daysAgo, customer }) {
+  const [low, high] = PRICE_RANGES[trade] || PRICE_RANGES.general;
+  const totalLow = low + TRIP_FEE;
+  const totalHigh = high + TRIP_FEE;
 
   const issueDetails = ISSUE_TEMPLATES[trade][state];
-  const summary = buildSummary({ state, trade, customer, distanceMiles, fuelSurcharge, totalLow, totalHigh, postcode });
+  const summary = buildSummary({ state, trade, customer, postcode, totalLow, totalHigh });
 
   return {
     boss_id: null, // filled at insert time
@@ -195,20 +183,20 @@ function buildCase({ state, trade, area, postcode, daysAgo, customer, far = fals
     issue_details: issueDetails,
     preferred_time: (state === "accepted" || state === "urgent") ? PREFERRED_TIMES[Math.floor(Math.random() * PREFERRED_TIMES.length)] : null,
     ai_decision: state,
-    ai_decision_reason: state === "rejected" ? (far ? "Out of service area (Perak)" : "Not in trade list") : null,
+    ai_decision_reason: state === "rejected" ? (postcode.startsWith("93") || postcode.startsWith("98") ? "Outside Bintulu service area" : "Not in trade list (car alarm)") : null,
     quote_low: state === "accepted" ? totalLow : null,
     quote_high: state === "accepted" ? totalHigh : null,
     pricing_breakdown: state === "accepted" ? {
       trip_fee: TRIP_FEE,
-      fuel_surcharge: fuelSurcharge,
-      total_trip_fee: totalTripFee,
+      fuel_surcharge: 0,
+      total_trip_fee: TRIP_FEE,
       range_low: low,
       range_high: high,
       total_low: totalLow,
       total_high: totalHigh,
-      distance_miles: distanceMiles,
-      free_distance_miles: FREE_DISTANCE,
-      surcharge_per_mile: SURCHARGE_PER_MILE,
+      distance_miles: null,
+      free_distance_miles: 999,
+      surcharge_per_mile: 0,
     } : null,
     summary,
     status: STATUS_MAP[state],
@@ -223,64 +211,66 @@ function generateDataset() {
   const cases = [];
   let nameIdx = 0;
 
-  function nextCustomer(area) {
+  function nextCustomer() {
     const name = CUSTOMER_NAMES[nameIdx % CUSTOMER_NAMES.length];
     nameIdx++;
-    return { name, phone: randomPhone(area) };
+    return { name, phone: randomPhone() };
   }
 
-  // ACCEPTED — Klang Valley (2 plumbing, 1 electrical, 1 handyman, 1 general)
-  [
-    { trade: "plumbing", area: "KL", streets: KL_STREETS, city: "Kuala Lumpur" },
-    { trade: "plumbing", area: "PJ", streets: PJ_STREETS, city: "Petaling Jaya" },
-    { trade: "electrical", area: "KL", streets: KL_STREETS, city: "Kuala Lumpur" },
-    { trade: "handyman", area: "PJ", streets: PJ_STREETS, city: "Petaling Jaya" },
-    { trade: "general", area: "ShahAlam", streets: SHAH_ALAM_STREETS, city: "Shah Alam" },
-  ].forEach(({ trade, area, streets, city }) => {
-    const customer = nextCustomer(area);
-    const postcode = IN_AREA_POSTCODES[area][Math.floor(Math.random() * IN_AREA_POSTCODES[area].length)];
-    customer.address = randomAddress(streets, postcode, city);
-    cases.push(buildCase({ state: "accepted", trade, area, postcode, daysAgo: Math.floor(Math.random() * 25), customer }));
+  // 6 ACCEPTED — Bintulu + nearby Sarawak north
+  const acceptedScenarios = [
+    { trade: "alarm",          state: "accepted", area: "Bintulu town" },
+    { trade: "cctv",           state: "accepted", area: "Light Industrial Estate" },
+    { trade: "autogate",       state: "accepted", area: "Tanjung Batu" },
+    { trade: "access_control", state: "accepted", area: "Kidurong" },
+    { trade: "door_lock",      state: "accepted", area: "Sibiew" },
+    { trade: "security",       state: "accepted", area: "Bintulu town" },  // new CCTV install
+  ];
+  acceptedScenarios.forEach(({ trade, area }) => {
+    const customer = nextCustomer();
+    const postcode = BINTULU_POSTCODES[Math.floor(Math.random() * BINTULU_POSTCODES.length)];
+    customer.address = randomAddress(postcode);
+    cases.push(buildCase({ state: "accepted", trade, postcode, daysAgo: Math.floor(Math.random() * 25), customer }));
   });
 
-  // ACCEPTED — Penang (1 plumbing)
+  // 1 URGENT — autogate stuck open overnight
   {
-    const customer = nextCustomer("Penang");
-    const postcode = IN_AREA_POSTCODES.Penang[Math.floor(Math.random() * IN_AREA_POSTCODES.Penang.length)];
-    customer.address = randomAddress(PENANG_STREETS, postcode, "Georgetown");
-    cases.push(buildCase({ state: "accepted", trade: "plumbing", area: "Penang", postcode, daysAgo: 3, customer }));
+    const customer = nextCustomer();
+    const postcode = BINTULU_POSTCODES[0];
+    customer.address = randomAddress(postcode);
+    cases.push(buildCase({ state: "urgent", trade: "autogate", postcode, daysAgo: 0, customer }));
   }
 
-  // URGENT — 1 plumbing in KL
+  // 1 URGENT — alarm triggered, no one home
   {
-    const customer = nextCustomer("KL");
-    const postcode = IN_AREA_POSTCODES.KL[0];
-    customer.address = randomAddress(KL_STREETS, postcode, "Kuala Lumpur");
-    cases.push(buildCase({ state: "urgent", trade: "plumbing", area: "KL", postcode, daysAgo: 1, customer }));
+    const customer = nextCustomer();
+    const postcode = BINTULU_POSTCODES[2];
+    customer.address = randomAddress(postcode);
+    cases.push(buildCase({ state: "urgent", trade: "alarm", postcode, daysAgo: 1, customer }));
   }
 
-  // UNSURE — 1 electrical in PJ
+  // 1 UNSURE — security audit
   {
-    const customer = nextCustomer("PJ");
-    const postcode = IN_AREA_POSTCODES.PJ[2];
-    customer.address = randomAddress(PJ_STREETS, postcode, "Petaling Jaya");
-    cases.push(buildCase({ state: "unsure", trade: "electrical", area: "PJ", postcode, daysAgo: 5, customer }));
+    const customer = nextCustomer();
+    const postcode = BINTULU_POSTCODES[4];
+    customer.address = randomAddress(postcode);
+    cases.push(buildCase({ state: "unsure", trade: "security", postcode, daysAgo: 5, customer }));
   }
 
-  // REJECTED — 1 out of trade (general/landscaping)
+  // 1 REJECTED — out of trade (car alarm)
   {
-    const customer = nextCustomer("KL");
-    const postcode = IN_AREA_POSTCODES.KL[1];
-    customer.address = randomAddress(KL_STREETS, postcode, "Kuala Lumpur");
-    cases.push(buildCase({ state: "rejected", trade: "general", area: "KL", postcode, daysAgo: 8, customer }));
+    const customer = nextCustomer();
+    const postcode = BINTULU_POSTCODES[1];
+    customer.address = randomAddress(postcode);
+    cases.push(buildCase({ state: "rejected", trade: "general", postcode, daysAgo: 8, customer }));
   }
 
-  // REJECTED — 1 out of area (Perak)
+  // 1 REJECTED — out of service area (Kuching 93xxx)
   {
-    const customer = nextCustomer("Penang");
-    const postcode = OUT_OF_AREA_POSTCODES[0];
-    customer.address = `${Math.floor(1 + Math.random() * 200)} Jalan Sultan Azlan Shah, ${postcode} Ipoh, Perak`;
-    cases.push(buildCase({ state: "rejected", trade: "electrical", area: "Penang", postcode, daysAgo: 4, customer, far: true }));
+    const customer = nextCustomer();
+    const postcode = OUT_OF_AREA_POSTCODES.kuching[0];
+    customer.address = `${Math.floor(1 + Math.random() * 200)} Jalan Padungan, ${postcode} Kuching, Sarawak`;
+    cases.push(buildCase({ state: "rejected", trade: "alarm", postcode, daysAgo: 4, customer }));
   }
 
   return cases;
@@ -302,7 +292,7 @@ async function getBossId() {
           try {
             const data = JSON.parse(b);
             if (!data || data.length === 0) {
-              reject(new Error("No MY boss found in database. Run migration 010 first."));
+              reject(new Error("No MY boss found in database. Run migration 011 first."));
               return;
             }
             resolve(data[0].id);
@@ -312,6 +302,39 @@ async function getBossId() {
         });
       },
     );
+  });
+}
+
+async function clearOldDemo() {
+  // Clear existing MY demo records (the old plumbing/electrical Klang Valley data)
+  const url = `${SUPABASE_URL}/rest/v1/work_orders?country=eq.MY&data_source=eq.demo`;
+  return new Promise((resolve, reject) => {
+    const req = require("https").request(
+      {
+        hostname: new URL(url).hostname,
+        path: new URL(url).pathname + new URL(url).search,
+        method: "DELETE",
+        headers: {
+          apikey: SUPABASE_KEY,
+          Authorization: "Bearer " + SUPABASE_KEY,
+          Prefer: "return=minimal",
+        },
+      },
+      (res) => {
+        let b = "";
+        res.on("data", (c) => (b += c));
+        res.on("end", () => {
+          if (res.statusCode >= 200 && res.statusCode < 300) {
+            console.log(`  → Cleared old MY demo records`);
+            resolve(true);
+          } else {
+            reject(new Error(`Clear failed: ${res.statusCode} ${b}`));
+          }
+        });
+      },
+    );
+    req.on("error", reject);
+    req.end();
   });
 }
 
@@ -338,7 +361,7 @@ async function insertCases(bossId, cases) {
         res.on("data", (c) => (b += c));
         res.on("end", () => {
           if (res.statusCode >= 200 && res.statusCode < 300) {
-            console.log(`✓ Inserted ${records.length} MY demo records`);
+            console.log(`  → Inserted ${records.length} H-Master demo records`);
             resolve(records.length);
           } else {
             reject(new Error(`Insert failed: ${res.statusCode} ${b}`));
@@ -354,11 +377,14 @@ async function insertCases(bossId, cases) {
 
 async function main() {
   try {
-    console.log("→ Looking up MY boss...");
+    console.log("→ Looking up H-Master boss...");
     const bossId = await getBossId();
     console.log(`  Found boss: ${bossId}`);
 
-    console.log("→ Generating MY demo dataset...");
+    console.log("→ Clearing old MY demo records (Klang Valley plumbing/electrical)...");
+    await clearOldDemo();
+
+    console.log("→ Generating H-Master demo dataset...");
     const cases = generateDataset();
     console.log(`  Generated ${cases.length} cases`);
 
@@ -366,7 +392,9 @@ async function main() {
     await insertCases(bossId, cases);
 
     console.log("\n✓ Done. View at: https://demo-navy-chi-47.vercel.app/my");
-    console.log("  All records have country='MY' and data_source='demo'");
+    console.log("  Records: 6 accepted + 2 urgent + 1 unsure + 2 rejected (out-of-trade + out-of-area)");
+    console.log("  Scenarios: alarm / cctv / autogate / access_control / door_lock / security");
+    console.log("  Postcodes: 97xxx (Bintulu + Sarawak north)");
   } catch (e) {
     console.error("✗", e.message);
     process.exit(1);

@@ -134,21 +134,24 @@ function validateSGService(boss: Boss, postal: string): ValidateServiceResult {
 }
 
 // =====================================================
-// Malaysia (5-digit postcode, 50xxx=KL, 47xxx=PJ, 40xxx=Shah Alam, 30xxx=Kuantan, 10xxx=Penang, 20xxx=JB, 80xxx=KK)
+// Malaysia — H-Master Bintulu
+// 97xxx = Bintulu + Sarawak north (PRIMARY service area)
+// 93xxx = Kuching / Sri Aman, 98xxx = Miri / Limbang (Sarawak but distant)
+// 50/47/40/10/20 = Peninsular Malaysia (out of scope, refer to nearest dealer)
 // =====================================================
 function validateMYService(boss: Boss, postal: string): ValidateServiceResult {
   if (!/^\d{5}$/.test(postal)) {
-    return { ok: false, reason: "Invalid Malaysia postcode. Please provide a 5-digit postcode (e.g. 50000 for Kuala Lumpur)." };
+    return { ok: false, reason: "Invalid Malaysia postcode. Please provide a 5-digit postcode (e.g. 97000 for Bintulu)." };
   }
   const prefix = postal.slice(0, 2);
   const allowed = boss.service_postal_prefixes && boss.service_postal_prefixes.length > 0
     ? boss.service_postal_prefixes
-    : ["50","47","40","30","10","20","80"];
+    : ["97"];
 
   if (!allowed.includes(prefix)) {
     return {
       ok: false,
-      reason: `Sorry, postcode area ${prefix}xxx is outside our service area. We cover Klang Valley (50/47/40), Penang (10), JB (20), and KK (80).`,
+      reason: `Postcode area ${prefix}xxx is outside H-Master's primary Bintulu service area. We are based at 97000 Bintulu, Sarawak. We may still be able to help — my boss will WhatsApp you to discuss.`,
       distance_miles: -1,
     };
   }
