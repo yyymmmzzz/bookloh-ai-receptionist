@@ -20,13 +20,14 @@ const SOURCE_BADGE: Record<DataSource, { label: string; classes: string; emoji: 
 
 function DashboardPageInner() {
   const searchParams = useSearchParams();
-  // Allow ?country=us|my|all (case-insensitive) to set initial filter
+  // Allow ?country=us|my|all (case-insensitive) to set initial filter.
+  // Default (no param or unknown) = show all countries.
   const initialCountry: CountryFilter = (() => {
     const c = (searchParams.get("country") || "").toLowerCase();
     if (c === "my") return "MY";
     if (c === "us") return "US";
     if (c === "all") return "all";
-    return "US";
+    return "all";
   })();
   const [orders, setOrders] = useState<WorkOrder[]>([]);
   const [loading, setLoading] = useState(true);
@@ -139,7 +140,8 @@ function DashboardPageInner() {
         <span className="text-xs text-gray-500 uppercase tracking-wide">Market:</span>
         {(["all", "US", "MY"] as CountryFilter[]).map((c) => {
           const active = countryFilter === c;
-          const href = `/?country=${c === "all" ? "all" : c.toLowerCase()}`;
+          // "all" tab is the canonical / — no query string needed
+          const href = c === "all" ? "/" : `/?country=${c.toLowerCase()}`;
           const label =
             c === "all" ? "🌍 All" :
             c === "US" ? "🇺🇸 US (United States)" :
