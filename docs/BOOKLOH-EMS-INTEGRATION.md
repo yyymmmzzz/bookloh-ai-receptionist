@@ -469,5 +469,5 @@ demo/
 - PRD: `/Users/yimozhang/Business/Handy Bookloh/Bookloh AI Receptionist 产品需求文档（PRD）.docx`
 - BP: `/Users/yimozhang/Business/Handy Bookloh/HandyLine AI 商业计划书_v0.3.docx`
 - BP change log: `/Users/yimozhang/Business/Handy Bookloh/BP_改动清单_v0.1→v0.2.md`
-- SETUP.md TODO: `/Users/yimozhang/Business/Handy Bookloh/demo/SETUP.md` line 354
-- Current code: `/Users/yimozhang/Business/Handy Bookloh/demo/`
+- SETUP.md TODO: `/Users/yimozhang/Business/Handy Bookloh/handyline-ai-receptionist/SETUP.md` line 354
+- Current code: `/Users/yimozhang/Business/Handy Bookloh/handyline-ai-receptionist/`
