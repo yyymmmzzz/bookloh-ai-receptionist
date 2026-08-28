@@ -176,3 +176,4 @@ When you're ready to move beyond a 3-day demo:
 ## License
 
 Internal demo. Do not distribute.
+# Re-deploy trigger 2026-08-28T08:02:29Z
