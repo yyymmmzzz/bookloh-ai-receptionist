@@ -176,4 +176,3 @@ When you're ready to move beyond a 3-day demo:
 ## License
 
 Internal demo. Do not distribute.
-
