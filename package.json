@@ -1,8 +1,8 @@
 {
-  "name": "bookloh-ai-receptionist-demo",
+  "name": "handyline-ai-receptionist-demo",
   "version": "0.1.0",
   "private": true,
-  "description": "Bookloh AI Receptionist — Tier A demo (Vapi + Twilio + Supabase + Next.js)",
+  "description": "HandyLine AI Receptionist — Tier A demo (Vapi + Twilio + Supabase + Next.js)",
   "scripts": {
     "dev": "next dev",
     "build": "next build",

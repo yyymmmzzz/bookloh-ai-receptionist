@@ -2,7 +2,7 @@
 /**
  * create-vapi-assistant.js
  *
- * Creates the Bookloh AI Receptionist assistant in Vapi via the API.
+ * Creates the HandyLine AI Receptionist assistant in Vapi via the API.
  * Reads the system prompt from vapi/system-prompt.md and creates the
  * full assistant with all 5 function-call tools in one shot.
  *

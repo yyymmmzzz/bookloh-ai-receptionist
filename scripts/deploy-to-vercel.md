@@ -20,7 +20,7 @@
 
 ### 第 3 步：项目设置
 
-- **Project Name**: `bookloh-demo` 或 `handyline-demo`（Vercel 上唯一即可）
+- **Project Name**: `handyline-demo`（Vercel 上唯一即可）
 - **Framework Preset**: Next.js（自动检测）
 - **Root Directory**: `./`
 - **Build Command**: `next build`（默认）

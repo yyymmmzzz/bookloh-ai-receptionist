@@ -58,7 +58,7 @@ You'll need:
 ## Step 1 — Supabase (5 minutes)
 
 1. Go to [supabase.com](https://supabase.com) → **Start your project** → sign in with GitHub.
-2. **New project** → name it `bookloh-demo` → choose a region (US East for Houston latency).
+2. **New project** → name it `handyline-demo` → choose a region (US East for Houston latency).
 3. Wait ~2 min for provisioning.
 4. **Project Settings → API**:
    - Copy `Project URL` → `NEXT_PUBLIC_SUPABASE_URL`
@@ -165,7 +165,7 @@ Copy the `https://xxxx-xx-xx-xx-xx.ngrok.io` URL. You'll set it in Vapi in Step 
 
 ## Step 7 — Wire up Vapi (3 minutes)
 
-1. Back in Vapi dashboard → **Assistants → Bookloh AI Receptionist**.
+1. Back in Vapi dashboard → **Assistants → HandyLine AI Receptionist**.
 2. **Server URL**: `https://YOUR_NGROK_URL/api/vapi/tools`
 3. **Server URL Secret**: same value as `WEBHOOK_SECRET` in `.env.local`.
 4. Save.

@@ -58,7 +58,7 @@ export async function POST(req: NextRequest) {
   // Choice: <Play> the boss's MP3 OR <Say> text fallback
   const intro = bossAudioUrl
     ? `<Play>${bossAudioUrl}</Play>`
-    : `<Say voice="alice">Hey, this is Bookloh with an urgent one. ${safeName} at ${safePhone}. ${safeIssue}.</Say>`;
+    : `<Say voice="alice">Hey, this is HandyLine with an urgent one. ${safeName} at ${safePhone}. ${safeIssue}.</Say>`;
 
   const twiml = `<?xml version="1.0" encoding="UTF-8"?>
 <Response>
