@@ -400,3 +400,4 @@ CREATE TABLE work_order_events (
 6. **定价模型：** 上面 4 档 plan 可以接受吗？$99 starter 起步？
 
 **这些不定下来，10 周计划没法开始。** 拍板后我开 Phase 1。
+
