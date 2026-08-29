@@ -1,139 +1,46 @@
 {
-  "name": "H-Master Service Desk — Bintulu",
+  "name": "H-Master Bintulu Receptionist",
   "model": {
     "provider": "openai",
-    "model": "gpt-4o",
-    "temperature": 0.3,
-    "maxTokens": 250
+    "model": "gpt-4o-mini",
+    "temperature": 0.2,
+    "maxTokens": 80
   },
   "voice": {
     "provider": "11labs",
-    "voiceId": "<MY_VOICE_ID_FROM_ELEVENLABS_CLONE>",
+    "voiceId": "HZrCrY9LUzc3dRxar8U2",
     "model": "eleven_flash_v2_5",
     "stability": 0.5,
     "similarityBoost": 0.75,
     "useSpeakerBoost": true
   },
-  "firstMessage": "Hello, this is the H-Master service desk in Bintulu. This call may be recorded for quality, ok. How can I help you today?",
-  "transcriptionProvider": "assemblyai",
-  "transcriptionLanguage": "en",
+  "firstMessage": "H-Master security, Bintulu. How can I help.",
   "endCallFunctionEnabled": true,
-  "endCallPhrases": ["bye", "goodbye", "okay thanks", "okay bye", "alright", "take care"],
-  "silenceTimeoutSeconds": 30,
-  "responseDelaySeconds": 0.5,
-  "llmRequestDelaySeconds": 0.5,
+  "endCallPhrases": ["bye", "goodbye", "thanks bye"],
+  "silenceTimeoutSeconds": 20,
+  "responseDelaySeconds": 0.3,
+  "llmRequestDelaySeconds": 0.3,
   "interruptionThreshold": 500,
   "maxDurationSeconds": 600,
-  "serverUrl": "https://YOUR_DOMAIN/api/vapi/tools",
+  "serverUrl": "https://demo-navy-chi-47.vercel.app/api/vapi/tools",
   "serverUrlSecret": "<<SAME VALUE AS WEBHOOK_SECRET IN YOUR .env>>",
   "tools": [
     {
       "type": "function",
       "function": {
-        "name": "check_trade",
-        "description": "PHASE 1 CHECK — call this IMMEDIATELY after the customer says what's wrong, BEFORE asking for an address. H-Master handles: security, alarm, cctv, autogate, access_control, door_lock, general (for related security work). NOT supported: car alarm, IT/networking, electrical wiring unrelated to security, pest control, general handyman.",
-        "parameters": {
-          "type": "object",
-          "properties": {
-            "issue_type": {
-              "type": "string",
-              "enum": ["security", "alarm", "cctv", "autogate", "access_control", "door_lock", "general"],
-              "description": "Type of security service needed"
-            }
-          },
-          "required": ["issue_type"]
-        }
-      }
-    },
-    {
-      "type": "function",
-      "function": {
-        "name": "validate_service",
-        "description": "PHASE 2 CHECK — call this only AFTER check_trade has confirmed the issue is in the trade list. Validates the Malaysia postcode is within H-Master's Bintulu service radius. Service area: postcode 97xxx (Bintulu + Sarawak north). 93xxx (Kuching), 98xxx (Miri), and other prefixes are outside the primary service area and may incur extra trip fees or be referred to a local dealer.",
-        "parameters": {
-          "type": "object",
-          "properties": {
-            "zipcode": {
-              "type": "string",
-              "description": "Customer's 5-digit Malaysia postcode (e.g. 97000 for Bintulu town centre)"
-            },
-            "issue_type": {
-              "type": "string",
-              "enum": ["security", "alarm", "cctv", "autogate", "access_control", "door_lock", "general"],
-              "description": "Type of security service needed"
-            }
-          },
-          "required": ["zipcode", "issue_type"]
-        }
-      }
-    },
-    {
-      "type": "function",
-      "function": {
-        "name": "get_price_quote",
-        "description": "Get a reference price range for a known issue type, plus the trip fee. Trip fee is always RM89 in Bintulu (no fuel surcharge — compact service area). Typical ranges: alarm RM200-1500, cctv RM500-3000, autogate RM500-2500, access_control RM300-1500, door_lock RM300-2000. Returns the full pricing breakdown so the AI can quote a total estimate in RM.",
-        "parameters": {
-          "type": "object",
-          "properties": {
-            "issue_type": {
-              "type": "string",
-              "enum": ["security", "alarm", "cctv", "autogate", "access_control", "door_lock", "general"]
-            }
-          },
-          "required": ["issue_type"]
-        }
-      }
-    },
-    {
-      "type": "function",
-      "function": {
-        "name": "flag_urgent",
-        "description": "Mark this call as URGENT. Use when the customer describes a security emergency: alarm triggered with no one home, CCTV completely down on a business premises, autogate stuck open in a secured compound, access control failure at a locked facility, suspected break-in, or any after-hours security event requiring immediate callback.",
-        "parameters": {
-          "type": "object",
-          "properties": {
-            "reason": {
-              "type": "string",
-              "description": "Why this is urgent"
-            }
-          },
-          "required": ["reason"]
-        }
-      }
-    },
-    {
-      "type": "function",
-      "function": {
-        "name": "flag_uncertain",
-        "description": "Mark this call as needing a callback. Use when the customer wants to talk to a person, you don't understand them, the issue is outside our security scope, or anything else requires the boss's input.",
-        "parameters": {
-          "type": "object",
-          "properties": {
-            "reason": {
-              "type": "string",
-              "description": "Why the boss needs to follow up"
-            }
-          },
-          "required": ["reason"]
-        }
-      }
-    },
-    {
-      "type": "function",
-      "function": {
         "name": "end_call",
-        "description": "End the call with a specific outcome. This tells the system the call is done and what the decision was.",
+        "description": "End the call. Placeholder assistant — always transfer to human.",
         "parameters": {
           "type": "object",
           "properties": {
             "outcome": {
               "type": "string",
               "enum": ["accepted", "urgent", "unsure", "rejected"],
-              "description": "accepted=we'll send someone, urgent=immediate callback, unsure=boss follow-up, rejected=out of scope"
+              "description": "Always use 'unsure' for placeholder — routes to human"
             },
             "summary": {
               "type": "string",
-              "description": "One-sentence summary of the call for the boss's records"
+              "description": "Brief summary of what caller wanted"
             }
           },
           "required": ["outcome", "summary"]
