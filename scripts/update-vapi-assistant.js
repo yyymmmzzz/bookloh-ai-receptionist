@@ -2,244 +2,120 @@
 /**
  * update-vapi-assistant.js
  *
- * Push the local system prompt + tools to the Vapi assistant.
- * Use this after editing vapi/system-prompt.md or tools.
+ * PATCH Vapi main US assistant (Alex / Handy Works). Re-runnable.
  *
- * IMPORTANT: Vapi PATCH REPLACES the model object, so we must send
- * the full model config (provider, model, systemPrompt, tools) each time.
+ * Reads:
+ *   - vapi/system-prompt.md (full prompt, code-fenced)
+ *   - vapi/assistant.json (model, voice, first message, delays, tools)
+ *
+ * Before running:
+ *   1. Edit vapi/system-prompt.md (prompt body)
+ *   2. Edit vapi/assistant.json (model/voice/delays/tools)
+ *   3. Then: node scripts/update-vapi-assistant.js
+ *
+ * Idempotent — re-running PATCHes the same assistant.
  */
 
 const fs = require("fs");
 const path = require("path");
-const https = require("https");
 
-function loadEnvLocal() {
-  const envPath = path.join(__dirname, "..", ".env.local");
-  if (!fs.existsSync(envPath)) return;
-  for (const line of fs.readFileSync(envPath, "utf-8").split("\n")) {
-    const t = line.trim();
-    if (!t || t.startsWith("#")) continue;
-    const eq = t.indexOf("=");
-    if (eq < 0) continue;
-    const k = t.slice(0, eq).trim();
-    const v = t.slice(eq + 1).trim();
-    if (!process.env[k]) process.env[k] = v;
-  }
+const envPath = path.join(__dirname, "..", ".env.local");
+for (const line of fs.readFileSync(envPath, "utf-8").split("\n")) {
+  const t = line.trim();
+  if (!t || t.startsWith("#")) continue;
+  const eq = t.indexOf("=");
+  if (eq < 0) continue;
+  const k = t.slice(0, eq).trim();
+  const v = t.slice(eq + 1).trim();
+  if (!process.env[k]) process.env[k] = v;
 }
-loadEnvLocal();
 
 const VAPI_API_KEY = process.env.VAPI_API_KEY;
 const ASSISTANT_ID = process.env.VAPI_ASSISTANT_ID;
-if (!VAPI_API_KEY || !ASSISTANT_ID) {
-  console.error("✗ Missing VAPI_API_KEY or VAPI_ASSISTANT_ID");
+if (!VAPI_API_KEY) {
+  console.error("✗ Missing VAPI_API_KEY in .env.local");
+  process.exit(1);
+}
+if (!ASSISTANT_ID) {
+  console.error("✗ Missing VAPI_ASSISTANT_ID in .env.local");
   process.exit(1);
 }
 
-const promptMd = fs.readFileSync(
-  path.join(__dirname, "..", "vapi", "system-prompt.md"),
-  "utf-8",
+const https = require("https");
+
+// Read assistant.json (model, voice, firstMessage, delays, tools)
+const cfg = JSON.parse(
+  fs.readFileSync(path.join(__dirname, "..", "vapi", "assistant.json"), "utf-8"),
 );
-const m = promptMd.match(/## Full System Prompt[\s\S]*?```\n([\s\S]*?)\n```/);
-if (!m) {
-  console.error("✗ Could not find system prompt block in vapi/system-prompt.md");
+
+// Refuse to send with placeholder values (skip systemPrompt + serverUrlSecret — filled from elsewhere)
+const SKIP_PLACEHOLDER_KEYS = new Set(["systemPrompt", "serverUrlSecret"]);
+function checkPlaceholders(obj, path = "") {
+  for (const [k, v] of Object.entries(obj)) {
+    const full = `${path}.${k}`;
+    if (SKIP_PLACEHOLDER_KEYS.has(k)) continue;
+    if (typeof v === "string" && v.includes("<<") && v.includes(">>")) {
+      throw new Error(`Placeholder not filled: ${full} = ${v}`);
+    }
+    if (typeof v === "object" && v !== null && !Array.isArray(v)) {
+      checkPlaceholders(v, full);
+    }
+  }
+}
+try {
+  checkPlaceholders(cfg);
+} catch (e) {
+  console.error(`✗ ${e.message}`);
+  console.error("  → Fill in placeholders in vapi/assistant.json");
   process.exit(1);
 }
-let systemPrompt = m[1].trim();
 
-const EXTRA_RULES = `## CRITICAL: handle "test" and "demo" calls
-If the customer says "I'm calling to test", "just testing", "is this AI?", "who are you?",
-or anything that suggests they're probing rather than asking for service:
-- DO NOT dismiss them or say goodbye
-- Treat it as a real call: ask "what can I help you with today?"
-- If they explicitly confirm it's just a test, say "Great, thanks for testing! Let me know if you have a real job for us." and then USE the end_call tool with outcome="accepted" and a summary like "Test call from customer. No real job."
-- The call MUST always end with the end_call tool so the system logs it. Never let the call end on a free-text goodbye without calling end_call.
+// Read system prompt markdown and inject into the model config
+// The .md file has 2+ code blocks: "First Message" (small) then "Full System Prompt" (the main one)
+// We want the LARGEST one (or the 2nd one)
+const sysPromptPath = path.join(__dirname, "..", "vapi", "system-prompt.md");
+const md = fs.readFileSync(sysPromptPath, "utf-8");
+const codeBlocks = [...md.matchAll(/```\n([\s\S]+?)\n```/g)].map((m) => m[1]);
+if (codeBlocks.length === 0) {
+  console.error("✗ Could not find code-fenced prompt block in system-prompt.md");
+  process.exit(1);
+}
+// Pick the largest code block (the full system prompt)
+const match = codeBlocks.reduce((a, b) => (b.length > a.length ? b : a), "");
+cfg.model.systemPrompt = match;
 
----
+console.log(`→ PATCH https://api.vapi.ai/assistant/${ASSISTANT_ID}`);
+console.log(`  name: ${cfg.name}`);
+console.log(`  model: ${cfg.model.provider}/${cfg.model.model} (temp=${cfg.model.temperature}, maxTokens=${cfg.model.maxTokens})`);
+console.log(`  voice: ${cfg.voice.provider}/${cfg.voice.voiceId} (model ${cfg.voice.model})`);
+console.log(`  firstMessage: ${(cfg.firstMessage || "").slice(0, 60)}`);
+console.log(`  tools: ${cfg.tools.length}`);
+console.log(`  silenceTimeout: ${cfg.silenceTimeoutSeconds}s / responseDelay: ${cfg.responseDelaySeconds}s / llmDelay: ${cfg.llmRequestDelaySeconds}s`);
+console.log(`  systemPrompt: ${cfg.model.systemPrompt.length} chars`);
 
-`;
-
-const finalPrompt = EXTRA_RULES + systemPrompt;
-
-// Tool definitions (must mirror what's in vapi/system-prompt.md)
-const TOOLS = [
-  {
-    type: "function",
-    function: {
-      name: "check_trade",
-      description:
-        "PHASE 1 CHECK — call this IMMEDIATELY after the customer says what's wrong, BEFORE asking for an address. Checks only whether the issue type is in the boss's trade list. If the result is in_trade=false, politely tell the customer you can't help and use end_call with outcome 'rejected' — do NOT ask for their address. If in_trade=true, proceed to ask for the zip code and then call validate_service.",
-      parameters: {
-        type: "object",
-        properties: {
-          issue_type: {
-            type: "string",
-            enum: ["plumbing", "electrical", "hvac", "handyman", "roofing", "general"],
-            description: "Type of repair needed (map the customer's words to the closest value)",
-          },
-        },
-        required: ["issue_type"],
-      },
-    },
-  },
-  {
-    type: "function",
-    function: {
-      name: "validate_service",
-      description:
-        "PHASE 2 CHECK — call this only AFTER check_trade has confirmed the issue is in the trade list. Validates the zip code is within the boss's service radius. If out of area, politely decline and end the call. If in area, proceed to collect details and quote.",
-      parameters: {
-        type: "object",
-        properties: {
-          zipcode: { type: "string", description: "Customer's 5-digit US zip code" },
-          issue_type: {
-            type: "string",
-            enum: ["plumbing", "electrical", "hvac", "handyman", "roofing", "general"],
-            description: "Type of repair needed",
-          },
-        },
-        required: ["zipcode", "issue_type"],
-      },
-    },
-  },
-  {
-    type: "function",
-    function: {
-      name: "get_price_quote",
-      description:
-        "Get a reference price range for a known issue type, plus the trip fee and any fuel surcharge. The trip fee is always $89. A fuel surcharge of $2 per mile is added for customers beyond 15 miles from our base. Returns the full pricing breakdown so the AI can quote a total estimate.",
-      parameters: {
-        type: "object",
-        properties: {
-          issue_type: {
-            type: "string",
-            enum: ["plumbing", "electrical", "hvac", "handyman", "roofing", "general"],
-          },
-          distance_miles: {
-            type: "number",
-            description:
-              "Optional. Driving distance to customer in miles. If omitted, the server will use the distance from the most recent validate_service call in this same conversation.",
-          },
-        },
-        required: ["issue_type"],
-      },
-    },
-  },
-  {
-    type: "function",
-    function: {
-      name: "flag_urgent",
-      description:
-        "Mark this call as URGENT. Use when the customer describes an emergency (water leak, electrical sparking, gas smell, no power in whole house, sewage backup, burst pipe). The boss will be called back within 5-15 minutes.",
-      parameters: {
-        type: "object",
-        properties: {
-          reason: {
-            type: "string",
-            description: "Why this is urgent (e.g. 'water everywhere', 'gas smell')",
-          },
-        },
-        required: ["reason"],
-      },
-    },
-  },
-  {
-    type: "function",
-    function: {
-      name: "flag_uncertain",
-      description:
-        "Mark this call as needing a callback. Use when the customer wants to talk to a person, you don't understand them, the issue is outside our price list, or anything else requires the boss's input.",
-      parameters: {
-        type: "object",
-        properties: {
-          reason: {
-            type: "string",
-            description: "Why the boss needs to follow up",
-          },
-        },
-        required: ["reason"],
-      },
-    },
-  },
-  {
-    type: "function",
-    function: {
-      name: "end_call",
-      description:
-        "End the call with a specific outcome. This tells the system the call is done and what the decision was. ALWAYS call this to formally end the call — do not rely on free-text goodbyes.",
-      parameters: {
-        type: "object",
-        properties: {
-          outcome: {
-            type: "string",
-            enum: ["accepted", "urgent", "unsure", "rejected"],
-            description:
-              "accepted=we'll send someone, urgent=immediate callback, unsure=boss follow-up, rejected=out of scope",
-          },
-          summary: {
-            type: "string",
-            description: "One-sentence summary of the call for the boss's records",
-          },
-        },
-        required: ["outcome", "summary"],
-      },
-    },
-  },
-];
-
-console.log(`✓ System prompt: ${finalPrompt.length} chars`);
-console.log(`✓ Tools: ${TOOLS.length}`);
-
-// PATCH with FULL model object (Vapi replaces, not merges)
 const body = JSON.stringify({
+  name: cfg.name,
   model: {
-    provider: "openai",
-    model: "gpt-4o",
-    temperature: 0.3,
-    maxTokens: 500,
-    systemPrompt: finalPrompt,
-    tools: TOOLS,
+    provider: cfg.model.provider,
+    model: cfg.model.model,
+    temperature: cfg.model.temperature,
+    maxTokens: cfg.model.maxTokens,
+    systemPrompt: cfg.model.systemPrompt,
+    tools: cfg.tools,
   },
-  // Alex's voice clone (uploaded to ElevenLabs Instant Voice Clone)
-  // Voice ID is the unique identifier returned by ElevenLabs after upload.
-  // 11labs = Vapi's provider string for ElevenLabs (NOT "elevenlabs")
-  // eleven_turbo_v2_5 = lowest-latency model, best for real-time phone calls
-  voice: {
-    provider: "11labs",
-    voiceId: process.env.ELEVENLABS_VOICE_ID || "HZrCrY9LUzc3dRxar8U2",
-    model: "eleven_turbo_v2_5",
-    stability: 0.5,
-    similarityBoost: 0.75,
-    useSpeakerBoost: true,
-  },
-  // Vapi expects credential references at the assistant level (NOT inside
-  // voice). When Vapi processes a 11labs voice, it finds the matching
-  // credential by provider type and uses its API key to fetch the voice.
+  voice: cfg.voice,
   credentialIds: process.env.ELEVENLABS_CREDENTIAL_ID
     ? [process.env.ELEVENLABS_CREDENTIAL_ID]
     : [],
-  // Texas-friendly opening — Alex's own voice, not a robot script
-  firstMessage:
-    "Hey, this is Alex over at Handy Works Home Services. This call may be recorded for quality. What can I help you with today?",
-  // Remove auto end-call phrases — the AI must use the end_call tool instead
-  endCallPhrases: [],
-  // Anti-repetition tuning. These two delay fields are accepted at the
-  // top level by the Vapi assistant API. The combination is the main
-  // defense against the "double generation" bug:
-  //   llmRequestDelaySeconds=0.5   → wait 500ms of customer silence before
-  //                                  sending the customer audio to the LLM
-  //   responseDelaySeconds=0.5     → wait 500ms after turn-taking before the
-  //                                  AI starts its reply
-  //   (without these, a natural customer breath of 0.2-0.3s mid-sentence
-  //    can be treated as "user done speaking" by Vapi, causing a
-  //    premature LLM call whose output is then overwritten by a second
-  //    call when the customer actually finishes — the user hears two
-  //    back-to-back AI turns.)
-  // NOTE: interruptionThreshold and maxDurationSeconds are NOT accepted
-  // here by the Vapi assistant API — they must be set in the Vapi
-  // dashboard under Assistants → [this assistant] → Voice → Call settings.
-  silenceTimeoutSeconds: 30,
-  responseDelaySeconds: 0.5,
-  llmRequestDelaySeconds: 0.5,
+  firstMessage: cfg.firstMessage,
+  endCallPhrases: cfg.endCallPhrases || [],
+  endCallFunctionEnabled: cfg.endCallFunctionEnabled !== false,
+  silenceTimeoutSeconds: cfg.silenceTimeoutSeconds,
+  responseDelaySeconds: cfg.responseDelaySeconds,
+  llmRequestDelaySeconds: cfg.llmRequestDelaySeconds,
+  maxDurationSeconds: cfg.maxDurationSeconds,
+  serverUrl: cfg.serverUrl,
+  serverUrlSecret: process.env.WEBHOOK_SECRET || cfg.serverUrlSecret,
 });
 
 const req = https.request(
@@ -260,12 +136,14 @@ const req = https.request(
       if (res.statusCode >= 200 && res.statusCode < 300) {
         const a = JSON.parse(data);
         console.log(`\n✓ Vapi assistant updated`);
-        console.log(`  System prompt: ${a.model?.systemPrompt?.length || 0} chars`);
-        console.log(`  Tools:         ${a.model?.tools?.length || 0}`);
-        console.log(`  endCallPhrases: ${JSON.stringify(a.endCallPhrases || [])}`);
+        console.log(`  ID: ${a.id}`);
+        console.log(`  Model: ${a.model?.provider}/${a.model?.model}`);
+        console.log(`  Voice: ${a.voice?.provider}/${a.voice?.voiceId}/${a.voice?.model}`);
+        console.log(`  Tools: ${a.model?.tools?.length}`);
+        console.log(`  firstMessage: ${(a.firstMessage || "").slice(0, 60)}`);
       } else {
-        console.error(`\n✗ Failed: ${res.statusCode}`);
-        console.error(data);
+        console.error(`\n✗ Vapi API error ${res.statusCode}`);
+        console.error(data.slice(0, 1000));
         process.exit(1);
       }
     });

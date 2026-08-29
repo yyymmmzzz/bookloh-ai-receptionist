@@ -124,6 +124,66 @@ async function dispatchToolCall(
   console.log(`[tools] Call: ${name}(${JSON.stringify(args)})`);
 
   switch (name) {
+    // Merged tool: check_trade + validate_service + get_price_quote in one call
+    case "check_and_quote": {
+      const issue_type = (args.issue_type as IssueType) || "general";
+      const zipcode = (args.zipcode as string) || "";
+
+      // Step 1: trade check
+      const trade = checkTrade(boss, issue_type);
+      if (!trade.in_trade) {
+        return {
+          in_trade: false,
+          reason: trade.reason,
+        };
+      }
+
+      // Step 2: validate service area (if zipcode provided)
+      if (zipcode) {
+        const validate = await validateService(boss, zipcode, issue_type);
+        lastValidatedZip = {
+          zipcode,
+          distance_miles: validate.distance_miles ?? null,
+          ok: validate.ok,
+        };
+        if (!validate.ok) {
+          return {
+            in_trade: true,
+            matched_trade: trade.matched_trade,
+            in_service: false,
+            reason: validate.reason,
+            distance_miles: validate.distance_miles,
+          };
+        }
+
+        // Step 3: get price quote with the distance
+        const distance = validate.distance_miles;
+        const quote = getPriceQuote(boss, issue_type, distance);
+        return {
+          in_trade: true,
+          matched_trade: trade.matched_trade,
+          in_service: true,
+          distance_miles: distance,
+          trip_fee: quote.trip_fee,
+          fuel_surcharge: quote.fuel_surcharge,
+          total_trip_fee: quote.total_trip_fee,
+          range_low: quote.range?.low,
+          range_high: quote.range?.high,
+          total_low: quote.total_low,
+          total_high: quote.total_high,
+          currency_symbol: quote.currency_symbol,
+        };
+      }
+
+      // No zipcode yet — return trade check only
+      return {
+        in_trade: true,
+        matched_trade: trade.matched_trade,
+        in_service: null,  // unknown
+      };
+    }
+
+    // Legacy tool names (kept for backward compat with old system prompts)
     case "check_trade": {
       const issue_type = (args.issue_type as IssueType) || "general";
       const result: CheckTradeResult = checkTrade(boss, issue_type);

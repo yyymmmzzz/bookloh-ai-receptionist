@@ -2,85 +2,45 @@
   "name": "HandyLine AI Receptionist — Handy Works",
   "model": {
     "provider": "openai",
-    "model": "gpt-4o",
-    "temperature": 0.3,
-    "maxTokens": 500,
-    "systemPrompt": "<<PASTE THE SYSTEM PROMPT FROM vapi/system-prompt.md HERE>>"
+    "model": "gpt-4o-mini",
+    "temperature": 0.2,
+    "maxTokens": 80
   },
   "voice": {
     "provider": "11labs",
     "voiceId": "HZrCrY9LUzc3dRxar8U2",
-    "model": "eleven_turbo_v2_5",
+    "model": "eleven_flash_v2_5",
     "stability": 0.5,
     "similarityBoost": 0.75,
     "useSpeakerBoost": true
   },
-  "firstMessage": "Hey, this is Alex over at Handy Works Home Services. This call may be recorded for quality. What can I help you with today?",
+  "firstMessage": "Handy Works, Alex speaking. What's the issue.",
   "endCallFunctionEnabled": true,
-  "endCallPhrases": ["goodbye", "have a good day", "thanks bye"],
-  "silenceTimeoutSeconds": 30,
-  "responseDelaySeconds": 0.5,
-  "llmRequestDelaySeconds": 0.5,
+  "endCallPhrases": ["bye", "goodbye", "thanks bye", "have a good day"],
+  "silenceTimeoutSeconds": 20,
+  "responseDelaySeconds": 0.3,
+  "llmRequestDelaySeconds": 0.3,
   "interruptionThreshold": 500,
   "maxDurationSeconds": 600,
-  "serverUrl": "https://YOUR_DOMAIN/api/vapi/tools",
+  "serverUrl": "https://demo-navy-chi-47.vercel.app/api/vapi/tools",
   "serverUrlSecret": "<<SAME VALUE AS WEBHOOK_SECRET IN YOUR .env>>",
   "tools": [
     {
       "type": "function",
       "function": {
-        "name": "check_trade",
-        "description": "PHASE 1 CHECK — call this IMMEDIATELY after the customer says what's wrong, BEFORE asking for an address. Checks only whether the issue type is in the boss's trade list. If the result is in_trade=false, politely tell the customer you can't help and use end_call with outcome 'rejected' — do NOT ask for their address. If in_trade=true, proceed to ask for the zip code and then call validate_service.",
+        "name": "check_and_quote",
+        "description": "One-shot check: trade in scope + service area + price quote. Call this EVERY turn after issue is identified. zipcode is optional — pass it as soon as customer mentions it. Returns: in_trade (bool), in_service (bool, if zipcode provided), distance_miles, trip_fee, fuel_surcharge, total_trip_fee, range_low, range_high, total_low, total_high.",
         "parameters": {
           "type": "object",
           "properties": {
             "issue_type": {
               "type": "string",
-              "enum": ["plumbing", "electrical", "hvac", "handyman", "roofing", "general"],
-              "description": "Type of repair needed (map the customer's words to the closest value)"
-            }
-          },
-          "required": ["issue_type"]
-        }
-      }
-    },
-    {
-      "type": "function",
-      "function": {
-        "name": "validate_service",
-        "description": "PHASE 2 CHECK — call this only AFTER check_trade has confirmed the issue is in the trade list. Validates the zip code is within the boss's service radius. If out of area, politely decline and end the call. If in area, proceed to collect details and quote.",
-        "parameters": {
-          "type": "object",
-          "properties": {
+              "enum": ["plumbing", "electrical", "hvac", "handyman", "roofing", "gas", "general"],
+              "description": "Type of repair needed"
+            },
             "zipcode": {
               "type": "string",
-              "description": "Customer's 5-digit US zip code"
-            },
-            "issue_type": {
-              "type": "string",
-              "enum": ["plumbing", "electrical", "hvac", "handyman", "roofing", "general"],
-              "description": "Type of repair needed"
-            }
-          },
-          "required": ["zipcode", "issue_type"]
-        }
-      }
-    },
-    {
-      "type": "function",
-      "function": {
-        "name": "get_price_quote",
-        "description": "Get a reference price range for a known issue type, plus the trip fee and any fuel surcharge. The trip fee is always $89. A fuel surcharge of $2 per mile is added for customers beyond 15 miles from our base. Returns the full pricing breakdown so the AI can quote a total estimate.",
-        "parameters": {
-          "type": "object",
-          "properties": {
-            "issue_type": {
-              "type": "string",
-              "enum": ["plumbing", "electrical", "hvac", "handyman", "roofing", "general"]
-            },
-            "distance_miles": {
-              "type": "number",
-              "description": "Optional. Driving distance to customer in miles. If omitted, the server will use the distance from the most recent validate_service call in this same conversation."
+              "description": "Customer's 5-digit US zip code (optional but recommended — pass ASAP once customer mentions it)"
             }
           },
           "required": ["issue_type"]
@@ -91,7 +51,7 @@
       "type": "function",
       "function": {
         "name": "flag_urgent",
-        "description": "Mark this call as URGENT. Use when the customer describes an emergency (water leak, electrical sparking, gas smell, no power in whole house, sewage backup, burst pipe). The boss will be called back within 5-15 minutes.",
+        "description": "Mark this call as URGENT. Use when customer describes emergency (burst pipe, gas smell, whole-house power loss, smoke, sparks, active leak damaging structure, AC dead + inventory at risk). Boss will be called back within 5-15 minutes.",
         "parameters": {
           "type": "object",
           "properties": {
@@ -108,7 +68,7 @@
       "type": "function",
       "function": {
         "name": "flag_uncertain",
-        "description": "Mark this call as needing a callback. Use when the customer wants to talk to a person, you don't understand them, the issue is outside our price list, or anything else requires the boss's input.",
+        "description": "Mark this call as needing a callback. Use when customer wants to talk to a person, you don't understand them, the issue is outside our scope, or anything else requires the boss's input.",
         "parameters": {
           "type": "object",
           "properties": {
@@ -136,7 +96,7 @@
             },
             "summary": {
               "type": "string",
-              "description": "One-sentence summary of the call for the boss's records"
+              "description": "One-sentence summary of the call for the boss's records (e.g. 'Kitchen sink leak, 77005, tomorrow morning')"
             }
           },
           "required": ["outcome", "summary"]
