@@ -177,3 +177,4 @@ When you're ready to move beyond a 3-day demo:
 
 Internal demo. Do not distribute.
 # Re-deploy trigger 2026-08-28T08:02:29Z
+# Vercel auto-deploy retry 2026-08-29T08:04:12Z
