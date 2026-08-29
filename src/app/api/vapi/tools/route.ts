@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getDefaultBoss, getBossByCountry, detectCountryFromPhone } from "@/lib/order";
+import { getDefaultBoss, getBossByCountry, getBossByVapiAssistantId, detectCountryFromPhone } from "@/lib/order";
 import { validateService, getPriceQuote, checkTrade } from "@/lib/validation";
 import type {
   AIDecision,
@@ -78,10 +78,27 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ results: [] });
   }
 
-  // Pick boss by country (from call's customer number)
+  // Pick boss — prefer exact match by Vapi assistant ID, then country, then default
+  const assistantId = body.message.call?.assistantId;
   const customerNumber = body.message.call?.customer?.number;
-  const country = detectCountryFromPhone(customerNumber);
-  const boss = country ? await getBossByCountry(country) : await getDefaultBoss();
+
+  let boss: Boss | null = null;
+  let bossSource = "unknown";
+  if (assistantId) {
+    boss = await getBossByVapiAssistantId(assistantId);
+    if (boss) bossSource = `assistant(${assistantId.slice(0, 8)})`;
+  }
+  if (!boss) {
+    const country = detectCountryFromPhone(customerNumber);
+    if (country) {
+      boss = await getBossByCountry(country);
+      if (boss) bossSource = `country(${country})`;
+    }
+  }
+  if (!boss) {
+    boss = await getDefaultBoss();
+    if (boss) bossSource = "default";
+  }
   if (!boss) {
     console.error("[tools] No boss configured");
     return NextResponse.json(
@@ -89,7 +106,7 @@ export async function POST(req: NextRequest) {
       { status: 500 },
     );
   }
-  console.log(`[tools] Boss for ${country || "default"}: ${boss.company_name} (${boss.country})`);
+  console.log(`[tools] Boss via ${bossSource}: ${boss.company_name} (${boss.country})`);
 
   // Reset per-call cache
   lastValidatedZip = null;

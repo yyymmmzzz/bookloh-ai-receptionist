@@ -68,6 +68,29 @@ export async function getDefaultBoss(): Promise<Boss | null> {
 }
 
 /**
+ * Look up the boss for a specific Vapi assistant ID.
+ * This is the preferred lookup because it's exact (not dependent on caller phone country).
+ *
+ * Use case: when Vapi calls our tools endpoint, the payload includes the
+ * assistantId. We look it up in the bosses table (vapi_assistant_id column)
+ * to find the right boss for this call.
+ */
+export async function getBossByVapiAssistantId(assistantId: string | null | undefined): Promise<Boss | null> {
+  if (!assistantId) return null;
+  const supabase = getServiceClient();
+  const { data, error } = await supabase
+    .from("bosses")
+    .select("*")
+    .eq("vapi_assistant_id", assistantId)
+    .maybeSingle();
+  if (error) {
+    console.error(`[order] getBossByVapiAssistantId(${assistantId}) failed:`, error);
+    return null;
+  }
+  return (data as Boss) || null;
+}
+
+/**
  * Look up the boss for a given country code (US / SG / MY / ID / ...).
  * Returns the first boss row matching the country. Falls back to
  * getDefaultBoss() (US) if no country-specific boss exists yet.
