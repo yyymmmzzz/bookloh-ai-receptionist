@@ -1,251 +1,273 @@
-# Alex（Handy Works）业务资料问卷
+# Alex (Handy Works Home Services) — Business Profile Questionnaire
 
-**发送对象:** Alex（Handy Works Home Services, Houston）
-**发送人:** Mimatt（HandyLine AI 产品）
-**目的:** 让 AI 接待员 100% 准确回答"你们能不能做 / 多少钱 / 多快来"
-**填表方式:** 直接回复这份文档，每条后面填你的答案；或语音 / 视频通话口述，Mimatt 帮你代填
+**To:** Alex (Handy Works Home Services, Bellaire TX)
+**From:** Mimatt (HandyLine AI Product)
+**Purpose:** Help the AI receptionist answer 100% accurately "Can you do X / how much / how fast"
+**How to fill:** Reply directly to this doc (one line per answer), or schedule a 30-min video call and Mimatt will fill it in for you.
 
 ---
 
-## 1. 基本信息
+## 0. Pre-filled (from website handyworkshomeservices.com)
 
-| # | 问题 | 你的答案 |
+We've pre-filled this section from your website. Confirm or correct each line.
+
+| Field | Pre-filled | Confirm or correct |
 |---|---|---|
-| 1.1 | 老板全名（紧急工单回拨时 AI 知道找谁）| |
-| 1.2 | 老板手机号（+1 xx-xxx-xxxx，紧急情况 AI 直接打）| |
-| 1.3 | WhatsApp 号码（同上手机号可以，填"same"）| |
-| 1.4 | 老板邮箱 | |
-| 1.5 | 公司注册年限（业务做了多久）| |
-| 1.6 | 团队人数（除了你）| |
+| Company | Handy Works Home Services | ✓ / correct: ____ |
+| Address | 6575 West Loop South, Suite 500, Bellaire, TX 77401 | ✓ / correct: ____ |
+| Email | handyworks281@gmail.com | ✓ / correct: ____ |
+| Service area | Greater Houston metro, 25-mile radius from Bellaire | ✓ / correct: ____ |
+| Languages | English, Spanish (basic) | ✓ / correct: ____ |
+| License | Texas LLC #32094253104 | ✓ / correct: ____ |
 
----
+## 1. Basic Info
 
-## 2. 营业时间
-
-| # | 问题 | 你的答案 |
+| # | Question | Your answer |
 |---|---|---|
-| 2.1 | 工作日营业时间（周一到五）| 9:00 - 18:00 ✓ / 改: ____ |
-| 2.2 | 周六 | 9:00 - 14:00 ✓ / 改: ____ |
-| 2.3 | 周日 | 休息 ✓ / 改: ____ |
-| 2.4 | 公共假期（Memorial Day, July 4, Labor Day, Thanksgiving, Christmas, New Year）营业吗？| 全休 / 部分营业 / 都营业 |
-| 2.5 | 圣诞节 / Thanksgiving 当天休？| 是 / 否 |
-| 2.6 | 临时休假的通知方式（AI 怎么知道）？| 比如 WhatsApp 你临时通知 |
+| 1.1 | Your full name (so AI knows how to address you on urgent callbacks) | |
+| 1.2 | Your mobile number (+1 xx-xxx-xxxx, AI will call you for emergencies) | |
+| 1.3 | WhatsApp number (same as mobile is fine, write "same") | |
+| 1.4 | Years in business (we have 2024 charter → ~2 years, but you may have prior experience) | |
+| 1.5 | Team size (besides you — employees, subcontractors, day laborers?) | |
+| 1.6 | Are you owner-operator (do you personally do every job)? | Yes / No |
 
----
+## 2. Hours
 
-## 3. 服务范围 & 半径
-
-| # | 问题 | 你的答案 |
+| # | Question | Your answer |
 |---|---|---|
-| 3.1 | 服务半径（mile）| 25 mile ✓ / 改: ____ |
-| 3.2 | 基础 zip code（公司所在）| 77002 ✓ / 改: ____ |
-| 3.3 | 接不接 Houston 周边（Katy, Sugar Land, Pearland, The Woodlands, Cypress）？| 全接 / 部分接 / 不接 / 加价 |
-| 3.4 | 接不接 Galveston / College Station？| 全接 / 部分接 / 不接 / 加价 |
-| 3.5 | 接不接 Dallas / San Antonio / Austin？| 全接 / 部分接 / 不接 / 不接（太远）|
-| 3.6 | 超出 25 mile 的报价怎么算？| $2/mile ✓ / 改: ____ |
-| 3.7 | 25 mile 内的 trip fee？| $89 ✓ / 改: ____ |
-| 3.8 | 商业客户接吗？| 接 / 不接 / 单独议价 |
+| 2.1 | Weekday hours (Mon-Fri) | 8:00 - 18:00 ✓ / change: ____ |
+| 2.2 | Saturday | 9:00 - 15:00 ✓ / change: ____ |
+| 2.3 | Sunday | closed ✓ / change: ____ |
+| 2.4 | Holidays (New Year, Memorial Day, July 4, Labor Day, Thanksgiving, Christmas) open? | All closed / most closed / most open |
+| 2.5 | Christmas Day / Thanksgiving Day — definitely closed? | Yes / No |
+| 2.6 | How do you notify AI of last-minute closures (vacation, sick day)? | (e.g. WhatsApp Mimatt to update) |
 
----
+## 3. Service Area & Pricing
 
-## 4. 业务范围（能做 vs 不能做）
+| # | Question | Your answer |
+|---|---|---|
+| 3.1 | Service radius (miles) | 25 mi ✓ / change: ____ |
+| 3.2 | Base zip code (where you start measuring from) | 77401 (Bellaire) ✓ / change: ____ |
+| 3.3 | Do you serve Katy, Sugar Land, Pearland, The Woodlands, Cypress? | All / some / extra fee |
+| 3.4 | Do you serve Galveston, College Station? | All / some / no |
+| 3.5 | Do you serve Dallas / San Antonio / Austin? | All / some / no |
+| 3.6 | Surcharge beyond 25 miles | $2/mile ✓ / change: ____ |
+| 3.7 | Trip fee (inside 25 mi) | $89 ✓ / change: ____ |
+| 3.8 | Do you do commercial jobs? | Yes / No / discuss per job |
 
-### 4.1 Plumbing 水管
+## 4. What You Do (scope of services)
 
-| # | 子项 | 接吗 | 报价区间（$）|
+### 4.1 Furniture Assembly & TV Mounting
+
+| # | Sub-item | Do you? | Price range ($) |
 |---|---|---|---|
-| 4.1.1 | 水龙头漏水 / 更换 | ✓ / X | 150-400 |
-| 4.1.2 | 马桶维修 | ✓ / X | |
-| 4.1.3 | 排水管堵塞 | ✓ / X | |
-| 4.1.4 | 垃圾处理器 | ✓ / X | |
-| 4.1.5 | 水管漏水（小范围）| ✓ / X | |
-| 4.1.6 | 热水器（电热）| ✓ / X | |
-| 4.1.7 | 热水器（**燃气**）| ✓ / X | |
-| 4.1.8 | 淋浴头 / 淋浴阀 | ✓ / X | |
-| 4.1.9 | 主管道更换（地下）| ✓ / X | |
-| 4.1.10 | 化粪池 / septic | ✓ / X | |
+| 4.1.1 | IKEA / flat-pack furniture (beds, dressers, desks) | ✓ / ✗ | 89-250 |
+| 4.1.2 | Office furniture (cubicles, desks) | ✓ / ✗ | |
+| 4.1.3 | Patio / outdoor furniture | ✓ / ✗ | |
+| 4.1.4 | Exercise equipment (treadmills, ellipticals) | ✓ / ✗ | |
+| 4.1.5 | TV mounting (with cable routing) | ✓ / ✗ | 89-200 |
+| 4.1.6 | TV mount recommendation / supply | ✓ / ✗ | |
 
-### 4.2 Electrical 电
+### 4.2 Smart Home
 
-| # | 子项 | 接吗 | 报价区间（$）|
+| # | Sub-item | Do you? | Price range ($) |
 |---|---|---|---|
-| 4.2.1 | 插座 / outlet（GFCI 复位）| ✓ / X | 150-400 |
-| 4.2.2 | 开关更换 | ✓ / X | |
-| 4.2.3 | 吊扇安装 | ✓ / X | |
-| 4.2.4 | 灯具更换 | ✓ / X | |
-| 4.2.5 | 断路器跳闸 | ✓ / X | |
-| 4.2.6 | 配线升级（部分）| ✓ / X | |
-| 4.2.7 | **配电箱 / 面板升级** | ✓ / X | |
-| 4.2.8 | 车库充电桩（EV）| ✓ / X | |
+| 4.2.1 | Smart locks (front, back, garage, pantry) | ✓ / ✗ | 150-600 |
+| 4.2.2 | Smart thermostats | ✓ / ✗ | |
+| 4.2.3 | Doorbell cameras | ✓ / ✗ | |
+| 4.2.4 | Security cameras (indoor/outdoor) | ✓ / ✗ | |
+| 4.2.5 | Light fixtures (smart) | ✓ / ✗ | |
+| 4.2.6 | Other smart home devices | ✓ / ✗ | |
 
-### 4.3 HVAC 暖通
+### 4.3 Window Coverings
 
-| # | 子项 | 接吗 | 报价区间（$）|
+| # | Sub-item | Do you? | Price range ($) |
 |---|---|---|---|
-| 4.3.1 | AC 维修（加氟 / 部件更换）| ✓ / X | 200-500 |
-| 4.3.2 | 加热维修 | ✓ / X | |
-| 4.3.3 | 滤网更换 / 提醒 | ✓ / X | |
-| 4.3.4 | 恒温器调试 | ✓ / X | |
-| 4.3.5 | 通风管道维修 | ✓ / X | |
-| 4.3.6 | **整套中央空调更换** | ✓ / X | |
-| 4.3.7 | **新装空调系统** | ✓ / X | |
-| 4.3.8 | 暖通管道全部更换 | ✓ / X | |
+| 4.3.1 | Drapes / curtains | ✓ / ✗ | 100-400 |
+| 4.3.2 | Roller shades | ✓ / ✗ | |
+| 4.3.3 | Blinds | ✓ / ✗ | |
+| 4.3.4 | Curtain rods / tracks | ✓ / ✗ | |
 
-### 4.4 Handyman 杂工
+### 4.4 Painting (Indoor)
 
-| # | 子项 | 接吗 | 报价区间（$）|
+| # | Sub-item | Do you? | Price range ($) |
 |---|---|---|---|
-| 4.4.1 | 家具组装（IKEA 等）| ✓ / X | 100-300 |
-| 4.4.2 | 电视挂墙 | ✓ / X | |
-| 4.4.3 | 门修复（合页、锁）| ✓ / X | |
-| 4.4.4 | 油漆（小范围）| ✓ / X | |
-| 4.4.5 | 干墙补丁 | ✓ / X | |
-| 4.4.6 | 栅栏修复 | ✓ / X | |
-| 4.4.7 | 压力清洗 | ✓ / X | |
-| 4.4.8 | 地板小修 | ✓ / X | |
+| 4.4.1 | Touch-up (single wall) | ✓ / ✗ | 200-1500 |
+| 4.4.2 | Single room | ✓ / ✗ | |
+| 4.4.3 | Whole house interior | ✓ / ✗ | |
+| 4.4.4 | Accent walls | ✓ / ✗ | |
+| 4.4.5 | Wallpaper removal | ✓ / ✗ | |
+| 4.4.6 | Exterior painting (house, trim, fence) | ✓ / ✗ | |
 
-### 4.5 Roofing 屋顶（确认接单方式）
+### 4.5 Electrical
 
-| # | 子项 | 接吗 | 方式 |
+| # | Sub-item | Do you? | Price range ($) |
 |---|---|---|---|
-| 4.5.1 | 屋面瓦片小修 | ✓ / X | 自做 / 协调给合作方 |
-| 4.5.2 | 屋面漏水 | ✓ / X | 自做 / 协调给合作方 |
-| 4.5.3 | 天沟 / gutter 清理 | ✓ / X | 自做 / 协调给合作方 |
-| 4.5.4 | 屋顶检查 | ✓ / X | 自做 / 协调给合作方 |
-| 4.5.5 | 整套屋顶更换 | ✓ / X | 自做 / 协调给合作方 |
-| 4.5.6 | 屋顶报价区间（$）| 500-3000 / 改: ____ | |
+| 4.5.1 | Ceiling fan installation | ✓ / ✗ | 120-500 |
+| 4.5.2 | Light fixture install / replace | ✓ / ✗ | |
+| 4.5.3 | Outlet / switch replacement | ✓ / ✗ | |
+| 4.5.4 | GFCI outlet | ✓ / ✗ | |
+| 4.5.5 | Doorbell / chime | ✓ / ✗ | |
+| 4.5.6 | Ceiling fan replace (existing) | ✓ / ✗ | |
+| 4.5.7 | **Electrical panel upgrade** | ✓ / ✗ | (likely refer out) |
 
-### 4.6 Gas 燃气（确认接单方式）
+### 4.6 Plumbing
 
-| # | 子项 | 接吗 | 方式 |
+| # | Sub-item | Do you? | Price range ($) |
 |---|---|---|---|
-| 4.6.1 | 燃气灶 / 烤箱维修 | ✓ / X | 自做 / 协调 |
-| 4.6.2 | 燃气热水器 | ✓ / X | 自做 / 协调 |
-| 4.6.3 | 燃气管道（室内）| ✓ / X | 自做 / 协调 |
-| 4.6.4 | 燃气管道（地下 / 户外）| ✓ / X | 自做 / 协调 |
-| 4.6.5 | 燃气报价区间（$）| 200-1500 / 改: ____ | |
+| 4.6.1 | Faucet repair / replace | ✓ / ✗ | 120-500 |
+| 4.6.2 | Toilet repair / replace | ✓ / ✗ | |
+| 4.6.3 | Sink install / replace | ✓ / ✗ | |
+| 4.6.4 | Pipe insulation | ✓ / ✗ | |
+| 4.6.5 | Leak repair (visible) | ✓ / ✗ | |
+| 4.6.6 | Water heater (electric tank) | ✓ / ✗ | |
+| 4.6.7 | **Slab leak** | ✗ (refer) | |
+| 4.6.8 | **Gas line** | ✗ (refer) | |
+| 4.6.9 | **Sewer line** | ✗ (refer) | |
 
-### 4.7 General 通用
+### 4.7 Drywall
 
-| # | 子项 | 接吗 | 报价区间（$）|
+| # | Sub-item | Do you? | Price range ($) |
 |---|---|---|---|
-| 4.7.1 | 搬运（小件）| ✓ / X | 100-300 |
-| 4.7.2 | 季节性维护 | ✓ / X | |
-| 4.7.3 | 出租房 turn-over | ✓ / X | |
-| 4.7.4 | 智能家居（基础）| ✓ / X | |
-| 4.7.5 | **害虫控制** | X | 推荐给 pest control |
-| 4.7.6 | **房屋翻新（厨房/卫生间整套）**| X | 推荐给 contractor |
-| 4.7.7 | **地基 / 结构问题** | X | 推荐给结构工程师 |
-| 4.7.8 | **网络 / IT 单独项目** | X | 推荐给 IT |
-| 4.7.9 | 屋顶 clean / 屋顶检查 | ✓ / X | |
+| 4.7.1 | Water damage repair (ceiling / wall) | ✓ / ✗ | 150-800 |
+| 4.7.2 | Hole patching (small) | ✓ / ✗ | |
+| 4.7.3 | Crack repair | ✓ / ✗ | |
+| 4.7.4 | Texture matching (orange peel, knockdown, smooth) | ✓ / ✗ | |
+| 4.7.5 | Demo + replacement (full panel) | ✓ / ✗ | |
 
----
+### 4.8 Outdoor
 
-## 5. 紧急情况
+| # | Sub-item | Do you? | Price range ($) |
+|---|---|---|---|
+| 4.8.1 | Pressure washing (house) | ✓ / ✗ | 150-600 |
+| 4.8.2 | Pressure washing (driveway) | ✓ / ✗ | |
+| 4.8.3 | Deck cleaning | ✓ / ✗ | |
+| 4.8.4 | Fence cleaning | ✓ / ✗ | |
+| 4.8.5 | Rust removal | ✓ / ✗ | |
+| 4.8.6 | Fence repair (partial) | ✓ / ✗ | 200-2000 |
+| 4.8.7 | Fence install (full) | ✓ / ✗ | |
+| 4.8.8 | Deck repair | ✓ / ✗ | |
+| 4.8.9 | Deck sealing / staining | ✓ / ✗ | |
+| 4.8.10 | Siding repair | ✓ / ✗ | |
+| 4.8.11 | Door / window install (exterior) | ✓ / ✗ | |
+| 4.8.12 | Weatherproofing | ✓ / ✗ | |
+| 4.8.13 | Heavy trash / junk removal | ✓ / ✗ | |
 
-| # | 场景 | 你的处理方式 |
+### 4.9 Roofing & Gas & HVAC
+
+| # | Sub-item | Do you? | How |
+|---|---|---|---|
+| 4.9.1 | Roofing (any) | ✗ self / ✓ coordinate | |
+| 4.9.2 | Gas line work | ✗ self / ✓ coordinate | |
+| 4.9.3 | Gas appliance install (stove, water heater) | ✗ self / ✓ coordinate | |
+| 4.9.4 | Central AC install / full replacement | ✗ self / ✓ coordinate | |
+| 4.9.5 | AC repair (small, refrigerant, parts) | ✓ / ✗ | 150-600 |
+| 4.9.6 | Heater repair | ✓ / ✗ | |
+
+### 4.10 What we DON'T do (for AI to politely decline)
+
+- Pest control (termites, roaches, snakes)
+- Foundation / structural / slab leaks
+- Full home renovation (kitchen/bath gut)
+- Standalone IT / networking
+- Standalone smart home (separate from installation)
+- Large tree removal (call arborist)
+- Pool service / repair
+- Appliance repair (washer/dryer/fridge — call appliance tech)
+
+## 5. Emergencies
+
+| # | Scenario | Your action |
 |---|---|---|
-| 5.1 | 主管道爆裂 / 全屋水浸 | 🔴 AI 直接打你电话 ✓ / 改: ____ |
-| 5.2 | 整屋断电（无原因）| 🔴 AI 直接打你电话 ✓ / 改: ____ |
-| 5.3 | **燃气味** | 🔴 客户先开窗 + 911 + AI 打你 ✓ / 改: ____ |
-| 5.4 | 商铺 AC 完全停止 + 货损风险 | 🔴 AI 打你电话 ✓ / 改: ____ |
-| 5.5 | 老人/小孩无热水 | 🟡 AI 加急排单 + 通知你 ✓ / 改: ____ |
-| 5.6 | 其他紧急情况（你列）| |
+| 5.1 | Burst pipe, water everywhere | 🔴 AI calls you directly ✓ / change: ____ |
+| 5.2 | Whole house power loss (no reason) | 🔴 AI calls you ✓ / change: ____ |
+| 5.3 | **Gas smell** | 🔴 Customer opens windows + 911 + AI calls you ✓ / change: ____ |
+| 5.4 | Shop / business AC dead + inventory at risk | 🔴 AI calls you ✓ / change: ____ |
+| 5.5 | Smoke / fire | 🔴 Customer 911 first + AI calls you ✓ / change: ____ |
+| 5.6 | No hot water (kids / elderly) | 🟡 AI urgent, callback 1 hour ✓ / change: ____ |
 
-**紧急外呼节奏：**
-- 第一次打你手机 → 你接了 → 客户 callback 你自己处理
-- 你没接 → 5 分钟再打一次
-- 还没接 → 10 分钟再打
-- 3 次没接 → 发 SMS 给你 + 让客户留言
+**Urgent callback cadence:**
+- 1st call → you answer → you handle customer
+- No answer → wait 5 min → 2nd call
+- No answer → wait 10 min → 3rd call
+- 3 no-answer → SMS you + tell customer to leave voicemail
 
----
+## 6. Payment & Quotes
 
-## 6. 付款 & 报价
-
-| # | 问题 | 你的答案 |
+| # | Question | Your answer |
 |---|---|---|
-| 6.1 | 上门估价 $89（之后客户修就含在工时里）| ✓ / 改: ____ |
-| 6.2 | 接受现金 | ✓ / 否 |
-| 6.3 | 接受信用卡 | ✓ / 否（什么卡：Visa / MC / Amex）|
-| 6.4 | 接受 check | ✓ / 否 |
-| 6.5 | 接受 Venmo / Zelle | ✓ / 否 |
-| 6.6 | 工时报价 | $XX/小时 ✓ / 改: ____ |
-| 6.7 | 配件单独报价？| 是 / 否 |
-| 6.8 | 客户拒修收上门费？| 是（$89）/ 否 |
+| 6.1 | Trip / diagnostic fee $89 (credited toward repair if they proceed) | ✓ / change: ____ |
+| 6.2 | Cash | ✓ / ✗ |
+| 6.3 | Credit cards (Visa, MC, Amex, Discover) | ✓ / ✗ which: ____ |
+| 6.4 | Check | ✓ / ✗ |
+| 6.5 | Zelle / Venmo | ✓ / ✗ which: ____ |
+| 6.6 | Hourly rate | $____/hr |
+| 6.7 | Parts priced separately | Yes / No |
+| 6.8 | If customer declines repair, do they pay the $89 trip fee? | Yes / No |
 
----
+## 7. Scheduling
 
-## 7. 时间 & 排期
-
-| # | 问题 | 你的答案 |
+| # | Question | Your answer |
 |---|---|---|
-| 7.1 | 正常预约多久能到？| 24 小时内 / 48 小时内 / 3 天 / 其他 |
-| 7.2 | 紧急单多久能到？| 60 分钟 / 90 分钟 / 2 小时 / 其他 |
-| 7.3 | 周六能接紧急单吗？| 能 / 不能（只接工作日）|
-| 7.4 | 客户喜欢上午还是下午来？| 上午 / 下午 / 都可以 |
-| 7.5 | 预约时间格式 | "Tomorrow morning 9-12" / "Mon afternoon 2-5" |
+| 7.1 | Normal appointment lead time | 24h / 48h / 3 days / other |
+| 7.2 | Urgent job lead time | 60 min / 90 min / 2h / other |
+| 7.3 | Saturday urgent jobs | Yes / No (weekday only) |
+| 7.4 | Customer preference (AM or PM) | AM / PM / either |
+| 7.5 | Time slot format | "Tomorrow morning 9-12" / "Mon afternoon 2-5" / other |
 
----
+## 8. Owner Preferences
 
-## 8. 老板偏好
-
-| # | 问题 | 你的答案 |
+| # | Question | Your answer |
 |---|---|---|
-| 8.1 | 老板真声录制（开场用你的声音）| 愿意 / 不愿意（用 AI 合成）|
-| 8.2 | 老板录音文本 | 1-2 分钟 mp3，提供后 5 分钟克隆 |
-| 8.3 | AI 性格偏好 | 友好温暖 / 专业冷静 / 兄弟哥们 / 阿姨式 |
-| 8.4 | AI 是否报老板名字？| "Alex from Handy Works" / 不报 |
-| 8.5 | AI 是否报价？| 是（区间）/ 否（只说"上门估价 $89"）|
-| 8.6 | AI 是否用老板真名？| 是（"This is Alex"）/ 否（"This is the Handy Works service desk"）|
-| 8.7 | 白名单号码（老客户，AI 跳过直接转你）| 列出来：________ |
-| 8.8 | 黑名单号码（欠款、纠纷）| 列出来：________ |
+| 8.1 | Want to record your own voice for opening? (vs AI default) | Yes / No |
+| 8.2 | If yes, you'll record 1-2 min mp3 | (date) ____ |
+| 8.3 | AI personality | Friendly/warm / Pro/calm / Casual/laid-back / Other: ____ |
+| 8.4 | AI should say your name? | "Alex from Handy Works" / "Handy Works service desk" / Other |
+| 8.5 | AI should give price ranges? | Yes (with range) / No (just say "call for quote") |
+| 8.6 | Whitelist numbers (skip AI, direct to you) | List: ____ |
+| 8.7 | Blacklist numbers (decline, don't call back) | List: ____ |
 
----
+## 9. Common Customer Questions (FAQ for AI)
 
-## 9. 常见问题（AI 直接答）
-
-| # | 客户常问 | 你的标准回答 |
+| # | Customer asks | Your standard answer |
 |---|---|---|
-| 9.1 | 周末工作吗？| |
-| 9.2 | 多久能来？| |
-| 9.3 | 估价免费吗？| |
-| 9.4 | 接受什么付款？| |
-| 9.5 | 保修多久？| |
-| 9.6 | 紧急单能马上来吗？| |
-| 9.7 | 你们做燃气吗？| |
-| 9.8 | 你们做屋顶吗？| |
-| 9.9 | 商业单接吗？| |
-| 9.10 | 你们有 license / insurance 吗？| |
-| 9.11 | 你们公司做了多久？| |
-| 9.12 | ...（你加）| |
+| 9.1 | "Are you open weekends?" | (Sat 9-3, Sun closed) |
+| 9.2 | "How soon can you come?" | (24-48h normal, 60-90min urgent) |
+| 9.3 | "Is the estimate free?" | ($89 trip, credited if you proceed) |
+| 9.4 | "What payment do you accept?" | (cash, cards, Zelle/Venmo) |
+| 9.5 | "Do you have a warranty?" | (30-day workmanship) |
+| 9.6 | "Can you come for emergency today?" | (Yes if before 5pm, depends on schedule) |
+| 9.7 | "Do you do roofing?" | (No, but I can refer you) |
+| 9.8 | "Do you do pest control?" | (No) |
+| 9.9 | "Do you do commercial?" | (Discuss per job) |
+| 9.10 | "Are you licensed / insured?" | (Yes, Texas LLC + insured) |
+| 9.11 | "How long have you been in business?" | (2 years official, more experience) |
+| 9.12 | "Do you speak Spanish?" | (Basic only) |
+| 9.13 | (Add your own) | |
 
----
+## 10. Recording & Compliance
 
-## 10. 录音 & 合规
-
-| # | 问题 | 你的答案 |
+| # | Question | Your answer |
 |---|---|---|
-| 10.1 | Texas 是 one-party 同意州（默认可录音）| 确认 ✓ |
-| 10.2 | 录音保留多久？| 30 天 / 60 天 / 90 天 / 永久 |
-| 10.3 | 录音保存到哪？| 你的 Supabase / 其他 |
-| 10.4 | 客户要求删除录音的处理 | AI 转给你 / 自动处理 / 不允许 |
-| 10.5 | 开场白要说什么？| "This call may be recorded" ✓ / 改: ____ |
+| 10.1 | Texas = one-party consent (call recording allowed with notice) | ✓ confirm |
+| 10.2 | How long to keep recordings? | 30 days / 60 days / 90 days / forever |
+| 10.3 | Where stored? | (Supabase / Other: ____) |
+| 10.4 | Customer says "delete my recording" — what? | AI transfers to you / AI confirms deletion / Not allowed |
+| 10.5 | Opening line wording | "This call may be recorded for quality" ✓ / change: ____ |
+
+## How to submit
+
+**3 options:**
+
+1. **Reply to this doc** — fill in each line
+2. **30-min video call** with Mimatt — he fills it in for you
+3. **WhatsApp voice notes** — record yourself answering each question
+
+**Priority:** Section 0 (confirm pre-filled) + 1.1-1.6 + 4 (services) + 5 (emergencies) are **required** before AI goes live.
+
+Other sections can use defaults for now, fill in later.
 
 ---
 
-## 提交方式
-
-**3 种任选：**
-
-1. **直接回复这份文档** — 把答案填到对应行
-2. **语音 / 视频通话** — 跟 Mimatt 一起过，30 分钟搞定
-3. **WhatsApp 短答** — 不方便打字的话，语音一条条发过来
-
-**优先级：** 1.1-1.6（基本信息）+ 4.1-4.4（基础 trade 子项）+ 5.1-5.5（紧急情况）这三块**必填**，AI 上线前 24 小时要齐。
-
-其他块（付款 / 时间 / FAQ）可以先填通用默认，后续补。
-
----
-
-**问题反馈：** 直接 WhatsApp Mimatt
-**截止日期：** AI 上线前 1 周（具体日期待定）
+**Questions?** WhatsApp Mimatt directly.
+**Deadline:** 24 hours before AI goes live (date TBD).

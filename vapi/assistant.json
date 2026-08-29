@@ -1,5 +1,5 @@
 {
-  "name": "HandyLine AI Receptionist — Handy Works",
+  "name": "Handy Works AI Receptionist",
   "model": {
     "provider": "openai",
     "model": "gpt-4o-mini",
@@ -14,7 +14,7 @@
     "similarityBoost": 0.75,
     "useSpeakerBoost": true
   },
-  "firstMessage": "Handy Works, Alex speaking. What's the issue.",
+  "firstMessage": "Handy Works, this is Alex. What's the issue.",
   "endCallFunctionEnabled": true,
   "endCallPhrases": ["bye", "goodbye", "thanks bye", "have a good day"],
   "silenceTimeoutSeconds": 20,
@@ -29,18 +29,18 @@
       "type": "function",
       "function": {
         "name": "check_and_quote",
-        "description": "One-shot check: trade in scope + service area + price quote. Call this EVERY turn after issue is identified. zipcode is optional — pass it as soon as customer mentions it. Returns: in_trade (bool), in_service (bool, if zipcode provided), distance_miles, trip_fee, fuel_surcharge, total_trip_fee, range_low, range_high, total_low, total_high.",
+        "description": "One-shot check: trade in scope + service area + price quote. Call EVERY turn after issue is identified. zipcode optional but pass ASAP. Returns in_trade, matched_trade, in_service, distance_miles, trip_fee, fuel_surcharge, total_trip_fee, range_low, range_high, total_low, total_high, currency_symbol.",
         "parameters": {
           "type": "object",
           "properties": {
             "issue_type": {
               "type": "string",
-              "enum": ["plumbing", "electrical", "hvac", "handyman", "roofing", "gas", "general"],
+              "enum": ["plumbing", "electrical", "hvac", "handyman", "painting", "tv_mounting", "furniture_assembly", "smart_home", "drywall", "pressure_washing", "fence_deck", "window_covering", "general"],
               "description": "Type of repair needed"
             },
             "zipcode": {
               "type": "string",
-              "description": "Customer's 5-digit US zip code (optional but recommended — pass ASAP once customer mentions it)"
+              "description": "Customer's 5-digit US zip code (optional but recommended — pass ASAP)"
             }
           },
           "required": ["issue_type"]
@@ -85,7 +85,7 @@
       "type": "function",
       "function": {
         "name": "end_call",
-        "description": "End the call with a specific outcome. This tells the system the call is done and what the decision was.",
+        "description": "End the call with a specific outcome. ALWAYS call this to formally end the call — do not rely on free-text goodbyes.",
         "parameters": {
           "type": "object",
           "properties": {
