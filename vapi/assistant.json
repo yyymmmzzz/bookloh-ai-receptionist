@@ -16,7 +16,7 @@
   },
   "firstMessage": "Handy Works, this is Alex. What's the issue.",
   "endCallFunctionEnabled": true,
-  "endCallPhrases": ["bye", "goodbye", "thanks bye", "have a good day"],
+  "endCallPhrases": ["have a good day", "cheers", "goodbye", "thanks"],
   "silenceTimeoutSeconds": 20,
   "responseDelaySeconds": 0.3,
   "llmRequestDelaySeconds": 0.3,
