@@ -10,7 +10,10 @@
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
     "db:push": "supabase db push",
-    "db:reset": "supabase db reset"
+    "db:reset": "supabase db reset",
+    "test:static": "node scripts/test-static-config.js",
+    "test:conversations": "node scripts/test-conversations.js",
+    "test:all": "node scripts/test-static-config.js && node scripts/test-conversations.js"
   },
   "dependencies": {
     "@supabase/ssr": "^0.5.2",
